@@ -21,26 +21,25 @@ BOOL IsBetween(INT64 iValue, INT64 iLeftBound, INT64 iRightBound)
 
 SIZE GetClientWindowSize(HWND hWnd)
 {
-	RECT rect;
-	GetClientRect(hWnd, &rect);
-	SIZE size;
-	size.cx = rect.right - rect.left;
-	size.cy = rect.bottom - rect.top;
-	return size;
+	RECT rWndRect;
+	GetClientRect(hWnd, &rWndRect);
+	SIZE sWndSize;
+	sWndSize.cx = rWndRect.right - rWndRect.left;
+	sWndSize.cy = rWndRect.bottom - rWndRect.top;
+	return sWndSize;
 }
 
 int FillWindowWithColor(HWND hWnd, COLORREF crColor)
 {
-	RECT rect;
-	GetClientRect(hWnd, &rect);
+	RECT rWndRect;
+	GetClientRect(hWnd, &rWndRect);
 	HDC hWndDC = GetDC(hWnd);
 	HBRUSH hBrush = CreateSolidBrush(crColor);
-	int iResult = FillRect(hWndDC, &rect, hBrush);
+	int iResult = FillRect(hWndDC, &rWndRect, hBrush);
 	DeleteObject(hBrush);
 	ReleaseDC(hWnd, hWndDC);
 	return iResult;
 }
-
 
 BOOL UpdateStampPosition(HWND hWnd, COORD &rcStampCoords, SIZE &rsStampSize,
 	BYTE cbLeftIndentPercents = defaults::cbLeftIndentPercents, 
@@ -58,21 +57,21 @@ BOOL UpdateStampPosition(HWND hWnd, COORD &rcStampCoords, SIZE &rsStampSize,
 		return false;
 	}
 
-	SIZE sizeWnd = GetClientWindowSize(hWnd);
-	rcStampCoords.X = (SHORT)(sizeWnd.cx * cbLeftIndentPercents / 100);
-	rcStampCoords.Y = (SHORT)(sizeWnd.cy * cbUpIndentPercents / 100);
-	rsStampSize.cx = (SHORT)(sizeWnd.cx * (100 - cbLeftIndentPercents 
+	SIZE sWndSize = GetClientWindowSize(hWnd);
+	rcStampCoords.X = (SHORT)(sWndSize.cx * cbLeftIndentPercents / 100);
+	rcStampCoords.Y = (SHORT)(sWndSize.cy * cbUpIndentPercents / 100);
+	rsStampSize.cx = (SHORT)(sWndSize.cx * (100 - cbLeftIndentPercents 
 		- cbRightIndentPercents) / 100);
-	rsStampSize.cy = (SHORT)(sizeWnd.cy * (100 - cbDownIndentPercents 
+	rsStampSize.cy = (SHORT)(sWndSize.cy * (100 - cbDownIndentPercents 
 		- cbUpIndentPercents) / 100);
 	return true;
 }
 
 LPTSTR GetEmptyString()
 {
-	LPTSTR newEmptyText = (LPTSTR)(calloc(1, sizeof(TCHAR)));
-	newEmptyText[0] = '\0';
-	return newEmptyText;
+	LPTSTR lpsEmptyText = (LPTSTR)(calloc(1, sizeof(TCHAR)));
+	lpsEmptyText[0] = '\0';
+	return lpsEmptyText;
 
 }
 
@@ -117,40 +116,37 @@ LPTSTR ConcatStringAndChar(LPTSTR lpsText, TCHAR cChar)
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	static COORD coordStamp = { 0 };
-	static SIZE sizeStamp = { 0 };
+	static COORD cStampCoordinates = { 0 };
+	static SIZE sStampSize = { 0 };
 	static LPTSTR lpsText = GetEmptyString();
 
 	switch (message)
 	{
-	case WM_CREATE:
-		DefWindowProc(hWnd, message, wParam, lParam);
-		break;
 	case WM_SIZE:
-		UpdateStampPosition(hWnd, coordStamp, sizeStamp);
+		UpdateStampPosition(hWnd, cStampCoordinates, sStampSize);
 		DefWindowProc(hWnd, message, wParam, lParam);
 		break;
 	case WM_PAINT:
 		FillWindowWithColor(hWnd, GetBackgroundColor());
 		break;
 	case WM_CHAR:
-		LPTSTR newText;
+		LPTSTR lpsNewText;
 		switch (wParam)
 		{
 		case VK_BACK:
-			if ((newText = DeleteLastChar(lpsText)) != NULL)
+			if ((lpsNewText = DeleteLastChar(lpsText)) != NULL)
 			{
 				free(lpsText);
-				lpsText = newText;
+				lpsText = lpsNewText;
 			}
 		case VK_RETURN:
 		case VK_ESCAPE:
 			break;
 		default:
-			if ((newText = ConcatStringAndChar(lpsText, (TCHAR)wParam)) != NULL)
+			if ((lpsNewText = ConcatStringAndChar(lpsText, (TCHAR)wParam)) != NULL)
 			{
 				free(lpsText);
-				lpsText = newText;
+				lpsText = lpsNewText;
 			}
 		}
 		break;
