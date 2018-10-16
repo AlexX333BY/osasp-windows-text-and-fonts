@@ -1,0 +1,54 @@
+#include <windows.h>
+
+DWORD GetBackgroundColor()
+{
+	return GetSysColor(COLOR_WINDOW);
+}
+
+
+LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		break;
+	default:
+		return DefWindowProc(hWnd, message, wParam, lParam);
+	}
+	return 0;
+}
+
+
+int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
+{
+	PCSTR spWndClassName = "LaboratoryWork2Class";
+
+	WNDCLASSEX wndClassEx;
+	wndClassEx.cbSize = sizeof(WNDCLASSEX);
+	wndClassEx.style = CS_DBLCLKS;
+	wndClassEx.lpfnWndProc = WndProc;
+	wndClassEx.cbClsExtra = 0;
+	wndClassEx.cbWndExtra = 0;
+	wndClassEx.hInstance = hInstance;
+	wndClassEx.hIcon = NULL;
+	wndClassEx.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wndClassEx.hbrBackground = CreateSolidBrush(GetBackgroundColor());
+	wndClassEx.lpszMenuName = NULL;
+	wndClassEx.lpszClassName = spWndClassName;
+	wndClassEx.hIconSm = NULL;
+	RegisterClassEx(&wndClassEx);
+
+	HWND hWnd = CreateWindow(spWndClassName, "Task #2", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
+	ShowWindow(hWnd, nCmdShow);
+	UpdateWindow(hWnd);
+
+	MSG msg;
+	while (GetMessage(&msg, NULL, 0, 0))
+	{
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
+
+	return (int)msg.wParam;
+}
