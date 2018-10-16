@@ -1,15 +1,62 @@
 #include <windows.h>
 
+namespace defaults
+{
+	const BYTE cbLeftIndentPercents = 10;
+	const BYTE cbRightIndentPercents = 10;
+	const BYTE cbUpIndentPercents = 10;
+	const BYTE cbDownIndentPercents = 10;
+}
+
 DWORD GetBackgroundColor()
 {
 	return GetSysColor(COLOR_WINDOW);
 }
 
+BOOL IsBetween(INT64 iValue, INT64 iLeftBound, INT64 iRightBound)
+{
+	return (iValue >= iLeftBound) && (iValue <= iRightBound);
+}
+
+SIZE GetClientWindowSize(HWND hWnd)
+{
+	RECT rect;
+	GetClientRect(hWnd, &rect);
+	SIZE size;
+	size.cx = rect.right - rect.left;
+	size.cy = rect.bottom - rect.top;
+	return size;
+}
+
+BOOL UpdateStampPosition(HWND hWnd, COORD &rcStampCoords, SIZE &rsStampSize,
+	BYTE cbLeftIndentPercents = defaults::cbLeftIndentPercents, BYTE cbRightIndentPercents = defaults::cbRightIndentPercents,
+	BYTE cbUpIndentPercents = defaults::cbUpIndentPercents, BYTE cbDownIndentPercents = defaults::cbDownIndentPercents)
+{
+	if (!IsBetween(cbLeftIndentPercents, 0, 100) || !IsBetween(cbRightIndentPercents, 0, 100)
+		|| !IsBetween(cbUpIndentPercents, 0, 100) || !IsBetween(cbDownIndentPercents, 0, 100)
+		|| (cbLeftIndentPercents + cbRightIndentPercents >= 100) || (cbDownIndentPercents + cbUpIndentPercents >= 100))
+	{
+		return false;
+	}
+
+	SIZE sizeWnd = GetClientWindowSize(hWnd);
+	rcStampCoords.X = (SHORT)(sizeWnd.cx * (cbLeftIndentPercents / 100));
+	rcStampCoords.Y = (SHORT)(sizeWnd.cy * (cbUpIndentPercents / 100));
+	rsStampSize.cx = (SHORT)(sizeWnd.cx * (100 - cbLeftIndentPercents - cbRightIndentPercents) / 100);
+	rsStampSize.cy = (SHORT)(sizeWnd.cy * (100 - cbDownIndentPercents - cbUpIndentPercents) / 100);
+	return true;
+}
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	static COORD coordStamp = { 0 };
+	static SIZE sizeStamp = { 0 };
+
 	switch (message)
 	{
+	case WM_SIZE:
+		UpdateStampPosition(hWnd, coordStamp, sizeStamp);
+		break;
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
