@@ -29,21 +29,28 @@ SIZE GetClientWindowSize(HWND hWnd)
 }
 
 BOOL UpdateStampPosition(HWND hWnd, COORD &rcStampCoords, SIZE &rsStampSize,
-	BYTE cbLeftIndentPercents = defaults::cbLeftIndentPercents, BYTE cbRightIndentPercents = defaults::cbRightIndentPercents,
-	BYTE cbUpIndentPercents = defaults::cbUpIndentPercents, BYTE cbDownIndentPercents = defaults::cbDownIndentPercents)
+	BYTE cbLeftIndentPercents = defaults::cbLeftIndentPercents, 
+	BYTE cbRightIndentPercents = defaults::cbRightIndentPercents,
+	BYTE cbUpIndentPercents = defaults::cbUpIndentPercents, 
+	BYTE cbDownIndentPercents = defaults::cbDownIndentPercents)
 {
-	if (!IsBetween(cbLeftIndentPercents, 0, 100) || !IsBetween(cbRightIndentPercents, 0, 100)
-		|| !IsBetween(cbUpIndentPercents, 0, 100) || !IsBetween(cbDownIndentPercents, 0, 100)
-		|| (cbLeftIndentPercents + cbRightIndentPercents >= 100) || (cbDownIndentPercents + cbUpIndentPercents >= 100))
+	if (!IsBetween(cbLeftIndentPercents, 0, 100) 
+		|| !IsBetween(cbRightIndentPercents, 0, 100)
+		|| !IsBetween(cbUpIndentPercents, 0, 100) 
+		|| !IsBetween(cbDownIndentPercents, 0, 100)
+		|| (cbLeftIndentPercents + cbRightIndentPercents >= 100) 
+		|| (cbDownIndentPercents + cbUpIndentPercents >= 100))
 	{
 		return false;
 	}
 
 	SIZE sizeWnd = GetClientWindowSize(hWnd);
-	rcStampCoords.X = (SHORT)(sizeWnd.cx * (cbLeftIndentPercents / 100));
-	rcStampCoords.Y = (SHORT)(sizeWnd.cy * (cbUpIndentPercents / 100));
-	rsStampSize.cx = (SHORT)(sizeWnd.cx * (100 - cbLeftIndentPercents - cbRightIndentPercents) / 100);
-	rsStampSize.cy = (SHORT)(sizeWnd.cy * (100 - cbDownIndentPercents - cbUpIndentPercents) / 100);
+	rcStampCoords.X = (SHORT)(sizeWnd.cx * cbLeftIndentPercents / 100);
+	rcStampCoords.Y = (SHORT)(sizeWnd.cy * cbUpIndentPercents / 100);
+	rsStampSize.cx = (SHORT)(sizeWnd.cx * (100 - cbLeftIndentPercents 
+		- cbRightIndentPercents) / 100);
+	rsStampSize.cy = (SHORT)(sizeWnd.cy * (100 - cbDownIndentPercents 
+		- cbUpIndentPercents) / 100);
 	return true;
 }
 
@@ -67,7 +74,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 }
 
 
-int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
+int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, 
+	LPTSTR lpCmdLine, int nCmdShow)
 {
 	PCSTR spWndClassName = "LaboratoryWork2Class";
 
@@ -86,7 +94,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdL
 	wndClassEx.hIconSm = NULL;
 	RegisterClassEx(&wndClassEx);
 
-	HWND hWnd = CreateWindow(spWndClassName, "Task #2", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
+	HWND hWnd = CreateWindow(spWndClassName, "Task #2", WS_OVERLAPPEDWINDOW, 
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, 
+		hInstance, NULL);
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
 
