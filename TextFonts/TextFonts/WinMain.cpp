@@ -1,5 +1,6 @@
 #include <windows.h>
 #include <strsafe.h>
+#include <gdiplus.h>
 
 #define _USE_MATH_DEFINES 
 
@@ -78,7 +79,6 @@ LPTSTR GetEmptyString()
 	LPTSTR lpsEmptyText = (LPTSTR)(calloc(1, sizeof(TCHAR)));
 	lpsEmptyText[0] = '\0';
 	return lpsEmptyText;
-
 }
 
 LPTSTR DeleteLastChar(LPTSTR lpsText)
@@ -120,6 +120,14 @@ LPTSTR ConcatStringAndChar(LPTSTR lpsText, TCHAR cChar)
 	}
 }
 
+LPTSTR CreateStringByChar(TCHAR cChar)
+{
+	LPTSTR lpsCharString = (LPTSTR)calloc(2, sizeof(TCHAR));
+	lpsCharString[0] = cChar;
+	lpsCharString[1] = '\0';
+	return lpsCharString;
+}
+
 LONG GetFontHeight(HWND hWnd)
 {
 	HDC hWndDC = GetDC(hWnd);
@@ -156,30 +164,42 @@ XFORM GetMovementXform(COORD cCoordinates)
 	return xForm;
 }
 
-BOOL PlaceTextByLine(HWND hWnd, COORD cCenterPoint, SIZE sTextRectSize, WORD wAngle, LPTSTR lpsText, DWORD dwFirstSymbol, DWORD dwLastSymbol)
+HFONT CreateFontByHeight(HWND hWnd, LONG lHeight)
 {
-	int iFullTextLength = lstrlen(lpsText);
-	if (dwFirstSymbol >= iFullTextLength)
-	{
-		return FALSE;
-	}
-	int iDisplayedTextLength = min(dwLastSymbol, iFullTextLength - 1) - dwFirstSymbol + 1;
-	if (iDisplayedTextLength < 1)
-	{
-		return FALSE;
-	}
-	LPSTR lpsDisplayedText = (LPSTR)calloc(iDisplayedTextLength + 1, sizeof(TCHAR));
-	for (int i = 0; i < iDisplayedTextLength; i++)
-	{
-		lpsDisplayedText[i] = lpsText[i + dwFirstSymbol];
-	}
-
 	HDC hWndDC = GetDC(hWnd);
+	TEXTMETRIC tmTextMetric;
+	GetTextMetrics(hWndDC, &tmTextMetric);
+	ReleaseDC(hWnd, hWndDC);
+
+	LOGFONT lFont;
+	memset(&lFont, 0, sizeof(LOGFONT));
+	lFont.lfHeight = lHeight;
+	lFont.lfWidth = 0;
+	lFont.lfOrientation = 0;
+	lFont.lfEscapement = 0;
+	lFont.lfWeight = FW_DONTCARE;
+	lFont.lfUnderline = FALSE;
+	lFont.lfStrikeOut = FALSE;
+	lFont.lfCharSet = tmTextMetric.tmCharSet;
+	lFont.lfOutPrecision = OUT_DEFAULT_PRECIS;
+	lFont.lfClipPrecision = CLIP_DEFAULT_PRECIS;
+	lFont.lfQuality = DEFAULT_QUALITY;
+
+	return CreateFontIndirect(&lFont);
+}
+
+BOOL PlaceSymbolByPoint(HWND hWnd, COORD cCenterPoint, LONG lFontHeight, LONG lPlaceholderWidth, TCHAR cSymbol, WORD wAngle)
+{
+	HDC hWndDC = GetDC(hWnd);
+
 	RECT rTextRect;
-	rTextRect.top = cCenterPoint.Y - sTextRectSize.cy / 2;
-	rTextRect.bottom = cCenterPoint.Y + sTextRectSize.cy / 2;
-	rTextRect.left = cCenterPoint.X - sTextRectSize.cx / 2;
-	rTextRect.right = cCenterPoint.X + sTextRectSize.cx / 2;
+	rTextRect.top = cCenterPoint.Y - lFontHeight / 2;
+	rTextRect.bottom = cCenterPoint.Y + lFontHeight / 2;
+	rTextRect.left = cCenterPoint.X - lPlaceholderWidth / 2;
+	rTextRect.right = cCenterPoint.X + lPlaceholderWidth / 2;
+
+	HFONT hFont = CreateFontByHeight(hWnd, lFontHeight);
+	HGDIOBJ oldObject = SelectObject(hWndDC, hFont);
 
 	XFORM xForm;
 	int iPrevGraphicsMode = SetGraphicsMode(hWndDC, GM_ADVANCED);
@@ -197,7 +217,12 @@ BOOL PlaceTextByLine(HWND hWnd, COORD cCenterPoint, SIZE sTextRectSize, WORD wAn
 	xForm = GetMovementXform(cCenterPoint);
 	ModifyWorldTransform(hWndDC, &xForm, MWT_RIGHTMULTIPLY);
 
-	BOOL bResult = DrawText(hWndDC, lpsDisplayedText, iDisplayedTextLength, &rTextRect, DT_CENTER | DT_SINGLELINE | DT_VCENTER | DT_WORDBREAK);
+	LPTSTR lpsTextToDisplay = CreateStringByChar(cSymbol);
+	BOOL bResult = DrawText(hWndDC, lpsTextToDisplay, 1, &rTextRect, DT_CENTER | DT_SINGLELINE | DT_VCENTER);
+	free(lpsTextToDisplay);
+
+	SelectObject(hWndDC, oldObject);
+	DeleteObject(hFont);
 
 	ModifyWorldTransform(hWndDC, NULL, MWT_IDENTITY);
 	SetGraphicsMode(hWndDC, iPrevGraphicsMode);
@@ -220,86 +245,110 @@ void GetLettersCountForRectangleSides(int iTextLength, int aiLettersCount[])
 	}
 }
 
-BOOL PlaceTextByRectangleUpperSide(HWND hWnd, COORD cRectangleCoordinate,
-	SIZE sRectangleSize, LPTSTR lpsText, DWORD dwFirstSymbol, DWORD dwLastSymbol)
+int PlaceTextByRectangleUpperSide(HWND hWnd, COORD cTextCoordinate, SIZE sTextRectSize, LONG lFontHeight, LPTSTR lpsText, int iFirstChar, int iLastChar)
 {
-	COORD cCenterPoint;
-	cCenterPoint.X = (SHORT)(cRectangleCoordinate.X + sRectangleSize.cx / 2);
-	cCenterPoint.Y = cRectangleCoordinate.Y;
-	SIZE sTextRectangleSize;
-	sTextRectangleSize.cx = sRectangleSize.cx;
-	sTextRectangleSize.cy = GetFontHeight(hWnd);
-	return PlaceTextByLine(hWnd, cCenterPoint, sTextRectangleSize, 0, lpsText, dwFirstSymbol, dwLastSymbol);
+	LONG lLetterWidth = sTextRectSize.cx / (iLastChar - iFirstChar + 1);
+	COORD cCenterCoordinate;
+	cCenterCoordinate.X = (SHORT)(cTextCoordinate.X + lLetterWidth / 2);
+	cCenterCoordinate.Y = cTextCoordinate.Y;
+	int iResult = 0;
+
+	for (int iLetterCounter = iFirstChar; iLetterCounter <= iLastChar; iLetterCounter++)
+	{
+		iResult += (PlaceSymbolByPoint(hWnd, cCenterCoordinate, lFontHeight, lLetterWidth, lpsText[iLetterCounter], 0) ? 1 : 0);
+		cCenterCoordinate.X += (SHORT)lLetterWidth;
+	}
+
+	return iResult;
 }
 
-BOOL PlaceTextByRectangleLeftSide(HWND hWnd, COORD cRectangleCoordinate,
-	SIZE sRectangleSize, LPTSTR lpsText, DWORD dwFirstSymbol, DWORD dwLastSymbol)
+int PlaceTextByRectangleRightSide(HWND hWnd, COORD cTextCoordinate, SIZE sTextRectSize, LONG lFontHeight, LPTSTR lpsText, int iFirstChar, int iLastChar)
 {
-	COORD cCenterPoint;
-	cCenterPoint.X = cRectangleCoordinate.X;
-	cCenterPoint.Y = (SHORT)(cRectangleCoordinate.Y + sRectangleSize.cy / 2);
-	SIZE sTextRectangleSize;
-	sTextRectangleSize.cx = sRectangleSize.cy;
-	sTextRectangleSize.cy = GetFontHeight(hWnd);
-	return PlaceTextByLine(hWnd, cCenterPoint, sTextRectangleSize, 270, lpsText, dwFirstSymbol, dwLastSymbol);
+	LONG lLetterWidth = sTextRectSize.cy / (iLastChar - iFirstChar + 1);
+	COORD cCenterCoordinate;
+	cCenterCoordinate.X = (SHORT)(cTextCoordinate.X + sTextRectSize.cx);
+	cCenterCoordinate.Y = (SHORT)(cTextCoordinate.Y + lLetterWidth / 2);
+	int iResult = 0;
+
+	for (int iLetterCounter = iFirstChar; iLetterCounter <= iLastChar; iLetterCounter++)
+	{
+		iResult += (PlaceSymbolByPoint(hWnd, cCenterCoordinate, lFontHeight, lLetterWidth, lpsText[iLetterCounter], 90) ? 1 : 0);
+		cCenterCoordinate.Y += (SHORT)lLetterWidth;
+	}
+
+	return iResult;
 }
 
-BOOL PlaceTextByRectangleLowerSide(HWND hWnd, COORD cRectangleCoordinate,
-	SIZE sRectangleSize, LPTSTR lpsText, DWORD dwFirstSymbol, DWORD dwLastSymbol)
+int PlaceTextByRectangleLowerSide(HWND hWnd, COORD cTextCoordinate, SIZE sTextRectSize, LONG lFontHeight, LPTSTR lpsText, int iFirstChar, int iLastChar)
 {
-	COORD cCenterPoint;
-	cCenterPoint.X = (SHORT)(cRectangleCoordinate.X + sRectangleSize.cx / 2);
-	cCenterPoint.Y = (SHORT)(cRectangleCoordinate.Y + sRectangleSize.cy);
-	SIZE sTextRectangleSize;
-	sTextRectangleSize.cx = sRectangleSize.cx;
-	sTextRectangleSize.cy = GetFontHeight(hWnd);
-	return PlaceTextByLine(hWnd, cCenterPoint, sTextRectangleSize, 180, lpsText, dwFirstSymbol, dwLastSymbol);
+	LONG lLetterWidth = sTextRectSize.cx / (iLastChar - iFirstChar + 1);
+	COORD cCenterCoordinate;
+	cCenterCoordinate.X = (SHORT)(cTextCoordinate.X + sTextRectSize.cx - lLetterWidth / 2);
+	cCenterCoordinate.Y = (SHORT)(cTextCoordinate.Y + sTextRectSize.cy);
+	int iResult = 0;
+
+	for (int iLetterCounter = iFirstChar; iLetterCounter <= iLastChar; iLetterCounter++)
+	{
+		iResult += (PlaceSymbolByPoint(hWnd, cCenterCoordinate, lFontHeight, lLetterWidth, lpsText[iLetterCounter], 180) ? 1 : 0);
+		cCenterCoordinate.X -= (SHORT)lLetterWidth;
+	}
+
+	return iResult;
 }
 
-BOOL PlaceTextByRectangleRightSide(HWND hWnd, COORD cRectangleCoordinate,
-	SIZE sRectangleSize, LPTSTR lpsText, DWORD dwFirstSymbol, DWORD dwLastSymbol)
+int PlaceTextByRectangleLeftSide(HWND hWnd, COORD cTextCoordinate, SIZE sTextRectSize, LONG lFontHeight, LPTSTR lpsText, int iFirstChar, int iLastChar)
 {
-	COORD cCenterPoint;
-	cCenterPoint.X = (SHORT)(cRectangleCoordinate.X + sRectangleSize.cx);
-	cCenterPoint.Y = (SHORT)(cRectangleCoordinate.Y + sRectangleSize.cy / 2);
-	SIZE sTextRectangleSize;
-	sTextRectangleSize.cx = sRectangleSize.cy;
-	sTextRectangleSize.cy = GetFontHeight(hWnd);
-	return PlaceTextByLine(hWnd, cCenterPoint, sTextRectangleSize, 90, lpsText, dwFirstSymbol, dwLastSymbol);
+	LONG lLetterWidth = sTextRectSize.cy / (iLastChar - iFirstChar + 1);
+	COORD cCenterCoordinate;
+	cCenterCoordinate.X = cTextCoordinate.X;
+	cCenterCoordinate.Y = (SHORT)(cTextCoordinate.Y + sTextRectSize.cy - lLetterWidth / 2);
+	int iResult = 0;
+
+	for (int iLetterCounter = iFirstChar; iLetterCounter <= iLastChar; iLetterCounter++)
+	{
+		iResult += (PlaceSymbolByPoint(hWnd, cCenterCoordinate, lFontHeight, lLetterWidth, lpsText[iLetterCounter], 270) ? 1 : 0);
+		cCenterCoordinate.Y -= (SHORT)(lLetterWidth);
+	}
+
+	return iResult;
 }
 
-BOOL PlaceTextByRectangle(HWND hWnd, COORD cRectangleCoordinates, SIZE sRectangleSize, LPTSTR lpsText)
+int PlaceTextByRectangle(HWND hWnd, COORD cTextCoordinate, SIZE sTextRectSize, LONG lFontHeight, LPTSTR lpsText)
 {
-	const BYTE cbRectangleSides = 4;
 	int aiLettersOnSide[4];
 	GetLettersCountForRectangleSides(lstrlen(lpsText), aiLettersOnSide);
-	DWORD dwFirstLetter, dwLastLetter;
-	BOOL bResult = TRUE;
+	int iFirstLetter, iLastLetter;
+	int iResult = 0;
+
 	if (aiLettersOnSide[0] > 0)
 	{
-		dwFirstLetter = 0;
-		dwLastLetter = aiLettersOnSide[0] - 1;
-		bResult &= PlaceTextByRectangleUpperSide(hWnd, cRectangleCoordinates, sRectangleSize, lpsText, dwFirstLetter, dwLastLetter);
+		iFirstLetter = 0;
+		iLastLetter = aiLettersOnSide[0] - 1;
+		iResult += PlaceTextByRectangleUpperSide(hWnd, cTextCoordinate, sTextRectSize, lFontHeight, lpsText, iFirstLetter, iLastLetter);
 	}
+
 	if (aiLettersOnSide[1] > 0)
 	{
-		dwFirstLetter = aiLettersOnSide[0];
-		dwLastLetter = aiLettersOnSide[0] + aiLettersOnSide[1] - 1;
-		bResult &= PlaceTextByRectangleRightSide(hWnd, cRectangleCoordinates, sRectangleSize, lpsText, dwFirstLetter, dwLastLetter);
+		iFirstLetter = aiLettersOnSide[0];
+		iLastLetter = aiLettersOnSide[0] + aiLettersOnSide[1] - 1;
+		iResult += PlaceTextByRectangleRightSide(hWnd, cTextCoordinate, sTextRectSize, lFontHeight, lpsText, iFirstLetter, iLastLetter);
 	}
+
 	if (aiLettersOnSide[2] > 0)
 	{
-		dwFirstLetter = aiLettersOnSide[0] + aiLettersOnSide[1];
-		dwLastLetter = aiLettersOnSide[0] + aiLettersOnSide[1] + aiLettersOnSide[2] - 1;
-		bResult &= PlaceTextByRectangleLowerSide(hWnd, cRectangleCoordinates, sRectangleSize, lpsText, dwFirstLetter, dwLastLetter);
+		iFirstLetter = aiLettersOnSide[0] + aiLettersOnSide[1];
+		iLastLetter = aiLettersOnSide[0] + aiLettersOnSide[1] + aiLettersOnSide[2] - 1;
+		iResult += PlaceTextByRectangleLowerSide(hWnd, cTextCoordinate, sTextRectSize, lFontHeight, lpsText, iFirstLetter, iLastLetter);
 	}
+
 	if (aiLettersOnSide[3] > 0)
 	{
-		dwFirstLetter = aiLettersOnSide[0] + aiLettersOnSide[1] + aiLettersOnSide[2];
-		dwLastLetter = aiLettersOnSide[0] + aiLettersOnSide[1] + aiLettersOnSide[2] + aiLettersOnSide[3] - 1;
-		bResult &= PlaceTextByRectangleLeftSide(hWnd, cRectangleCoordinates, sRectangleSize, lpsText, dwFirstLetter, dwLastLetter);
+		iFirstLetter = aiLettersOnSide[0] + aiLettersOnSide[1] + aiLettersOnSide[2];
+		iLastLetter = aiLettersOnSide[0] + aiLettersOnSide[1] + aiLettersOnSide[2] + aiLettersOnSide[3] - 1;
+		iResult += PlaceTextByRectangleLeftSide(hWnd, cTextCoordinate, sTextRectSize, lFontHeight, lpsText, iFirstLetter, iLastLetter);
 	}
-	return bResult;
+
+	return iResult;
 }
 
 void PostDrawStampMessage(HWND hWnd)
@@ -312,6 +361,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	static COORD cStampCoordinates = { 0 };
 	static SIZE sStampSize = { 0 };
 	static LPTSTR lpsText = GetEmptyString();
+	static LONG lFontHeight = GetFontHeight(hWnd);
 
 	switch (message)
 	{
@@ -343,12 +393,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			}
 		}
 		break;
+	case WM_KEYDOWN:
+		switch (wParam)
+		{
+		case VK_F5:
+			if (lFontHeight > 1)
+			{
+				--lFontHeight;
+				PostDrawStampMessage(hWnd);
+			}
+			break;
+		case VK_F6:
+			++lFontHeight;
+			PostDrawStampMessage(hWnd);
+			break;
+		}
+		break;
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
 	case WM_DRAW_STAMP:
 		FillWindowWithColor(hWnd, GetBackgroundColor());
-		PlaceTextByRectangle(hWnd, cStampCoordinates, sStampSize, lpsText);
+		PlaceTextByRectangle(hWnd, cStampCoordinates, sStampSize, lFontHeight, lpsText);
 		break;
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
