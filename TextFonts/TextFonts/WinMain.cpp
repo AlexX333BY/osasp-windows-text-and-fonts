@@ -8,14 +8,6 @@
 
 #define WM_DRAW_STAMP WM_USER
 
-namespace defaults
-{
-	const BYTE cbLeftIndentPercents = 10;
-	const BYTE cbRightIndentPercents = 10;
-	const BYTE cbUpIndentPercents = 10;
-	const BYTE cbDownIndentPercents = 10;
-}
-
 DWORD GetBackgroundColor()
 {
 	return GetSysColor(COLOR_WINDOW);
@@ -48,29 +40,35 @@ int FillWindowWithColor(HWND hWnd, COLORREF crColor)
 	return iResult;
 }
 
-BOOL UpdateStampPosition(HWND hWnd, COORD &rcStampCoords, SIZE &rsStampSize,
-	BYTE cbLeftIndentPercents = defaults::cbLeftIndentPercents, 
-	BYTE cbRightIndentPercents = defaults::cbRightIndentPercents,
-	BYTE cbUpIndentPercents = defaults::cbUpIndentPercents, 
-	BYTE cbDownIndentPercents = defaults::cbDownIndentPercents)
+typedef struct StampIndent
 {
-	if (!IsBetween(cbLeftIndentPercents, 0, 100) 
-		|| !IsBetween(cbRightIndentPercents, 0, 100)
-		|| !IsBetween(cbUpIndentPercents, 0, 100) 
-		|| !IsBetween(cbDownIndentPercents, 0, 100)
-		|| (cbLeftIndentPercents + cbRightIndentPercents >= 100) 
-		|| (cbDownIndentPercents + cbUpIndentPercents >= 100))
+	BYTE cbTop, cbRight, cbBottom, cbLeft;
+} _StampIndent;
+
+StampIndent GetDefaultStampIndent()
+{
+	return { 10, 10, 10, 10 };
+}
+
+BOOL UpdateStampPosition(HWND hWnd, COORD &rcStampCoords, SIZE &rsStampSize, StampIndent sStampIndent)
+{
+	if (!IsBetween(sStampIndent.cbLeft, 0, 100)
+		|| !IsBetween(sStampIndent.cbRight, 0, 100)
+		|| !IsBetween(sStampIndent.cbTop, 0, 100)
+		|| !IsBetween(sStampIndent.cbBottom, 0, 100)
+		|| (sStampIndent.cbLeft + sStampIndent.cbRight >= 100)
+		|| (sStampIndent.cbTop + sStampIndent.cbBottom >= 100))
 	{
 		return FALSE;
 	}
 
 	SIZE sWndSize = GetClientWindowSize(hWnd);
-	rcStampCoords.X = (SHORT)(sWndSize.cx * cbLeftIndentPercents / 100);
-	rcStampCoords.Y = (SHORT)(sWndSize.cy * cbUpIndentPercents / 100);
-	rsStampSize.cx = (SHORT)(sWndSize.cx * (100 - cbLeftIndentPercents 
-		- cbRightIndentPercents) / 100);
-	rsStampSize.cy = (SHORT)(sWndSize.cy * (100 - cbDownIndentPercents 
-		- cbUpIndentPercents) / 100);
+	rcStampCoords.X = (SHORT)(sWndSize.cx * sStampIndent.cbLeft / 100);
+	rcStampCoords.Y = (SHORT)(sWndSize.cy * sStampIndent.cbTop / 100);
+	rsStampSize.cx = (SHORT)(sWndSize.cx * (100 - sStampIndent.cbLeft
+		- sStampIndent.cbRight) / 100);
+	rsStampSize.cy = (SHORT)(sWndSize.cy * (100 - sStampIndent.cbBottom
+		- sStampIndent.cbTop) / 100);
 	return TRUE;
 }
 
@@ -217,9 +215,11 @@ BOOL PlaceSymbolByPoint(HWND hWnd, COORD cCenterPoint, LONG lFontHeight, LONG lP
 	xForm = GetMovementXform(cCenterPoint);
 	ModifyWorldTransform(hWndDC, &xForm, MWT_RIGHTMULTIPLY);
 
+	int iOldBkMode = SetBkMode(hWndDC, TRANSPARENT);
 	LPTSTR lpsTextToDisplay = CreateStringByChar(cSymbol);
 	BOOL bResult = DrawText(hWndDC, lpsTextToDisplay, 1, &rTextRect, DT_CENTER | DT_SINGLELINE | DT_VCENTER);
 	free(lpsTextToDisplay);
+	SetBkMode(hWndDC, iOldBkMode);
 
 	SelectObject(hWndDC, oldObject);
 	DeleteObject(hFont);
@@ -250,7 +250,7 @@ int PlaceTextByRectangleUpperSide(HWND hWnd, COORD cTextCoordinate, SIZE sTextRe
 	LONG lLetterWidth = sTextRectSize.cx / (iLastChar - iFirstChar + 1);
 	COORD cCenterCoordinate;
 	cCenterCoordinate.X = (SHORT)(cTextCoordinate.X + lLetterWidth / 2);
-	cCenterCoordinate.Y = cTextCoordinate.Y;
+	cCenterCoordinate.Y = (SHORT)(cTextCoordinate.Y - lFontHeight / 2);
 	int iResult = 0;
 
 	for (int iLetterCounter = iFirstChar; iLetterCounter <= iLastChar; iLetterCounter++)
@@ -266,7 +266,7 @@ int PlaceTextByRectangleRightSide(HWND hWnd, COORD cTextCoordinate, SIZE sTextRe
 {
 	LONG lLetterWidth = sTextRectSize.cy / (iLastChar - iFirstChar + 1);
 	COORD cCenterCoordinate;
-	cCenterCoordinate.X = (SHORT)(cTextCoordinate.X + sTextRectSize.cx);
+	cCenterCoordinate.X = (SHORT)(cTextCoordinate.X + sTextRectSize.cx + lFontHeight / 2);
 	cCenterCoordinate.Y = (SHORT)(cTextCoordinate.Y + lLetterWidth / 2);
 	int iResult = 0;
 
@@ -284,7 +284,7 @@ int PlaceTextByRectangleLowerSide(HWND hWnd, COORD cTextCoordinate, SIZE sTextRe
 	LONG lLetterWidth = sTextRectSize.cx / (iLastChar - iFirstChar + 1);
 	COORD cCenterCoordinate;
 	cCenterCoordinate.X = (SHORT)(cTextCoordinate.X + sTextRectSize.cx - lLetterWidth / 2);
-	cCenterCoordinate.Y = (SHORT)(cTextCoordinate.Y + sTextRectSize.cy);
+	cCenterCoordinate.Y = (SHORT)(cTextCoordinate.Y + sTextRectSize.cy + lFontHeight / 2);
 	int iResult = 0;
 
 	for (int iLetterCounter = iFirstChar; iLetterCounter <= iLastChar; iLetterCounter++)
@@ -300,7 +300,7 @@ int PlaceTextByRectangleLeftSide(HWND hWnd, COORD cTextCoordinate, SIZE sTextRec
 {
 	LONG lLetterWidth = sTextRectSize.cy / (iLastChar - iFirstChar + 1);
 	COORD cCenterCoordinate;
-	cCenterCoordinate.X = cTextCoordinate.X;
+	cCenterCoordinate.X = (SHORT)(cTextCoordinate.X - lFontHeight / 2);
 	cCenterCoordinate.Y = (SHORT)(cTextCoordinate.Y + sTextRectSize.cy - lLetterWidth / 2);
 	int iResult = 0;
 
@@ -313,7 +313,7 @@ int PlaceTextByRectangleLeftSide(HWND hWnd, COORD cTextCoordinate, SIZE sTextRec
 	return iResult;
 }
 
-int PlaceTextByRectangle(HWND hWnd, COORD cTextCoordinate, SIZE sTextRectSize, LONG lFontHeight, LPTSTR lpsText)
+int PlaceTextByRectangle(HWND hWnd, COORD cRectangleCoordinate, SIZE sRectangleSize, LONG lFontHeight, LPTSTR lpsText)
 {
 	int aiLettersOnSide[4];
 	GetLettersCountForRectangleSides(lstrlen(lpsText), aiLettersOnSide);
@@ -324,36 +324,149 @@ int PlaceTextByRectangle(HWND hWnd, COORD cTextCoordinate, SIZE sTextRectSize, L
 	{
 		iFirstLetter = 0;
 		iLastLetter = aiLettersOnSide[0] - 1;
-		iResult += PlaceTextByRectangleUpperSide(hWnd, cTextCoordinate, sTextRectSize, lFontHeight, lpsText, iFirstLetter, iLastLetter);
+		iResult += PlaceTextByRectangleUpperSide(hWnd, cRectangleCoordinate, sRectangleSize, lFontHeight, lpsText, iFirstLetter, iLastLetter);
 	}
 
 	if (aiLettersOnSide[1] > 0)
 	{
 		iFirstLetter = aiLettersOnSide[0];
 		iLastLetter = aiLettersOnSide[0] + aiLettersOnSide[1] - 1;
-		iResult += PlaceTextByRectangleRightSide(hWnd, cTextCoordinate, sTextRectSize, lFontHeight, lpsText, iFirstLetter, iLastLetter);
+		iResult += PlaceTextByRectangleRightSide(hWnd, cRectangleCoordinate, sRectangleSize, lFontHeight, lpsText, iFirstLetter, iLastLetter);
 	}
 
 	if (aiLettersOnSide[2] > 0)
 	{
 		iFirstLetter = aiLettersOnSide[0] + aiLettersOnSide[1];
 		iLastLetter = aiLettersOnSide[0] + aiLettersOnSide[1] + aiLettersOnSide[2] - 1;
-		iResult += PlaceTextByRectangleLowerSide(hWnd, cTextCoordinate, sTextRectSize, lFontHeight, lpsText, iFirstLetter, iLastLetter);
+		iResult += PlaceTextByRectangleLowerSide(hWnd, cRectangleCoordinate, sRectangleSize, lFontHeight, lpsText, iFirstLetter, iLastLetter);
 	}
 
 	if (aiLettersOnSide[3] > 0)
 	{
 		iFirstLetter = aiLettersOnSide[0] + aiLettersOnSide[1] + aiLettersOnSide[2];
 		iLastLetter = aiLettersOnSide[0] + aiLettersOnSide[1] + aiLettersOnSide[2] + aiLettersOnSide[3] - 1;
-		iResult += PlaceTextByRectangleLeftSide(hWnd, cTextCoordinate, sTextRectSize, lFontHeight, lpsText, iFirstLetter, iLastLetter);
+		iResult += PlaceTextByRectangleLeftSide(hWnd, cRectangleCoordinate, sRectangleSize, lFontHeight, lpsText, iFirstLetter, iLastLetter);
 	}
 
 	return iResult;
 }
 
-void PostDrawStampMessage(HWND hWnd)
+BOOL PostDrawStampMessage(HWND hWnd)
 {
-	PostMessage(hWnd, WM_DRAW_STAMP, NULL, NULL);
+	return PostMessage(hWnd, WM_DRAW_STAMP, NULL, NULL);
+}
+
+BOOL PostWmSizeMessage(HWND hWnd)
+{
+	return PostMessage(hWnd, WM_SIZE, NULL, NULL);
+}
+
+typedef enum LoadResult
+{
+	LR_OK = 0,
+	LR_CANCELLED_BY_USER = 1,
+	LR_ERROR = -1,
+} _LoadResult;
+
+LoadResult LoadStampBackground(HWND hWnd, HBITMAP &hStampBackground)
+{
+	char psFileName[MAX_PATH] = { '\0' };
+
+	OPENFILENAME oOpenFileName;
+	oOpenFileName.lStructSize = sizeof(OPENFILENAME);
+	oOpenFileName.hwndOwner = hWnd;
+	oOpenFileName.hInstance = NULL;
+	oOpenFileName.lpstrFilter = "Images\0*.bmp;*.gif;*.jpeg;*.png;*.tiff;*.exif;*.wmf;*.emf;*.jpg\0\0";
+	oOpenFileName.lpstrCustomFilter = NULL;
+	oOpenFileName.nFilterIndex = 1;
+	oOpenFileName.lpstrFile = psFileName;
+	oOpenFileName.nMaxFile = sizeof(psFileName);
+	oOpenFileName.lpstrFileTitle = NULL;
+	oOpenFileName.lpstrInitialDir = NULL;
+	oOpenFileName.lpstrTitle = "Select stamp background";
+	oOpenFileName.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
+	oOpenFileName.lpstrDefExt = NULL;
+
+	if (GetOpenFileName(&oOpenFileName))
+	{
+		int iFileNameLength = MultiByteToWideChar(CP_ACP, 0, psFileName, -1, NULL, 0);
+		WCHAR *cWideCharFileName = new WCHAR[MultiByteToWideChar(CP_ACP, 0, psFileName, -1, NULL, 0)];
+		MultiByteToWideChar(CP_ACP, 0, psFileName, -1, cWideCharFileName, iFileNameLength);
+
+		Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+		ULONG_PTR ulpGdiplusToken;
+		GdiplusStartup(&ulpGdiplusToken, &gdiplusStartupInput, NULL);
+
+		Gdiplus::Bitmap *sourceImage = Gdiplus::Bitmap::FromFile(cWideCharFileName);
+		HBITMAP hBitmap;
+		Gdiplus::Color imageBackgroundColor;
+		imageBackgroundColor.SetFromCOLORREF(GetBackgroundColor());
+		Gdiplus::Status bitmapStatus = sourceImage->GetHBITMAP(imageBackgroundColor, &hBitmap);
+
+		Gdiplus::GdiplusShutdown(ulpGdiplusToken);
+
+		if (bitmapStatus != Gdiplus::Ok)
+		{
+			return LR_ERROR;
+		}
+
+		if (hStampBackground != NULL)
+		{
+			DeleteObject(hStampBackground);
+		}
+		hStampBackground = hBitmap;
+		return LR_OK;
+	}
+	return LR_CANCELLED_BY_USER;
+}
+
+SIZE GetBitmapSize(HBITMAP hBitmap)
+{
+	BITMAP bBitmap;
+	GetObject(hBitmap, sizeof(BITMAP), &bBitmap);
+	SIZE sResult;
+	sResult.cx = bBitmap.bmWidth;
+	sResult.cy = bBitmap.bmHeight;
+	return sResult;
+}
+
+BOOL DrawStampBackground(HWND hWnd, COORD cRectangleCoordinates, SIZE sRectangleSize, HBITMAP hBackground, LONG lFontHeight, BOOL bToBeBehindText)
+{
+	if (bToBeBehindText)
+	{
+		cRectangleCoordinates.X -= lFontHeight;
+		cRectangleCoordinates.Y -= lFontHeight;
+		sRectangleSize.cx += lFontHeight * 2;
+		sRectangleSize.cy += lFontHeight * 2;
+	}
+
+	SIZE sBackgroundSize = GetBitmapSize(hBackground);
+	HDC hWndDC = GetDC(hWnd);
+	HDC hBackgroundDC = CreateCompatibleDC(hWndDC);
+	HGDIOBJ hOldObject = SelectObject(hBackgroundDC, hBackground);
+
+	BOOL bResult = StretchBlt(hWndDC, cRectangleCoordinates.X, cRectangleCoordinates.Y, sRectangleSize.cx, sRectangleSize.cy, hBackgroundDC, 0, 0, sBackgroundSize.cx, sBackgroundSize.cy, SRCCOPY);
+	
+	SelectObject(hBackgroundDC, hOldObject);
+	DeleteDC(hBackgroundDC);
+	ReleaseDC(hWnd, hWndDC);
+	return bResult;
+}
+
+LONG GetMaxFontHeight(HWND hWnd, COORD cStampCoordinates, SIZE sStampSize)
+{
+	SIZE sWindowSize = GetClientWindowSize(hWnd);
+	return min(min(cStampCoordinates.X, cStampCoordinates.Y), min(sWindowSize.cx - cStampCoordinates.X - sStampSize.cx, sWindowSize.cy - cStampCoordinates.Y - sStampSize.cy));
+}
+
+BOOL CanIncreaseStampIndent(StampIndent sStampIndent)
+{
+	return (sStampIndent.cbBottom + sStampIndent.cbTop + 1 < 100) && (sStampIndent.cbLeft + sStampIndent.cbRight + 1 < 100);
+}
+
+BOOL CanDecreaseStampIndent(StampIndent sStampIndent)
+{
+	return (sStampIndent.cbLeft > 0) && (sStampIndent.cbBottom > 0) && (sStampIndent.cbRight > 0) && (sStampIndent.cbTop > 0);
 }
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -362,11 +475,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	static SIZE sStampSize = { 0 };
 	static LPTSTR lpsText = GetEmptyString();
 	static LONG lFontHeight = GetFontHeight(hWnd);
+	static HBITMAP hBackgroundImage = NULL;
+	static BOOL isTextOnImage = FALSE;
+	static StampIndent sStampIndent = GetDefaultStampIndent();
 
 	switch (message)
 	{
 	case WM_SIZE:
-		UpdateStampPosition(hWnd, cStampCoordinates, sStampSize);
+		UpdateStampPosition(hWnd, cStampCoordinates, sStampSize, sStampIndent);
+		lFontHeight = min(lFontHeight, GetMaxFontHeight(hWnd, cStampCoordinates, sStampSize));
 		PostDrawStampMessage(hWnd);
 		DefWindowProc(hWnd, message, wParam, lParam);
 		break;
@@ -396,17 +513,73 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_KEYDOWN:
 		switch (wParam)
 		{
-		case VK_F5:
-			if (lFontHeight > 1)
+		case VK_F2:
+			if (LoadStampBackground(hWnd, hBackgroundImage) == LR_OK)
 			{
-				--lFontHeight;
 				PostDrawStampMessage(hWnd);
 			}
 			break;
-		case VK_F6:
-			++lFontHeight;
-			PostDrawStampMessage(hWnd);
+		case VK_F3:
+			if (hBackgroundImage != NULL)
+			{
+				DeleteObject(hBackgroundImage);
+				hBackgroundImage = NULL;
+				PostDrawStampMessage(hWnd);
+			}
 			break;
+		case VK_F4:
+			isTextOnImage = !isTextOnImage;
+			if (hBackgroundImage != NULL)
+			{
+				PostDrawStampMessage(hWnd);
+			}
+			break;
+		}
+		break;
+	case WM_MOUSEWHEEL:
+		if (GET_KEYSTATE_WPARAM(wParam) == MK_SHIFT)
+		{
+			if (GET_WHEEL_DELTA_WPARAM(wParam) > 0)
+			{
+				if (CanIncreaseStampIndent(sStampIndent))
+				{
+					sStampIndent.cbBottom++;
+					sStampIndent.cbLeft++;
+					sStampIndent.cbRight++;
+					sStampIndent.cbTop++;
+					PostWmSizeMessage(hWnd);
+				}
+			}
+			else
+			{
+				if (CanDecreaseStampIndent(sStampIndent))
+				{
+					sStampIndent.cbBottom--;
+					sStampIndent.cbLeft--;
+					sStampIndent.cbRight--;
+					sStampIndent.cbTop--;
+					PostWmSizeMessage(hWnd);
+				}
+			}
+		}
+		else
+		{
+			if (GET_WHEEL_DELTA_WPARAM(wParam) > 0)
+			{
+				if (lFontHeight < GetMaxFontHeight(hWnd, cStampCoordinates, sStampSize))
+				{
+					++lFontHeight;
+					PostDrawStampMessage(hWnd);
+				}
+			}
+			else
+			{
+				if (lFontHeight > 1)
+				{
+					--lFontHeight;
+					PostDrawStampMessage(hWnd);
+				}
+			}
 		}
 		break;
 	case WM_DESTROY:
@@ -414,6 +587,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_DRAW_STAMP:
 		FillWindowWithColor(hWnd, GetBackgroundColor());
+		if (hBackgroundImage != NULL)
+		{
+			DrawStampBackground(hWnd, cStampCoordinates, sStampSize, hBackgroundImage, lFontHeight, isTextOnImage);
+		}
 		PlaceTextByRectangle(hWnd, cStampCoordinates, sStampSize, lFontHeight, lpsText);
 		break;
 	default:
