@@ -434,8 +434,8 @@ BOOL DrawStampBackground(HWND hWnd, COORD cRectangleCoordinates, SIZE sRectangle
 {
 	if (bToBeBehindText)
 	{
-		cRectangleCoordinates.X -= lFontHeight;
-		cRectangleCoordinates.Y -= lFontHeight;
+		cRectangleCoordinates.X -= (SHORT)lFontHeight;
+		cRectangleCoordinates.Y -= (SHORT)lFontHeight;
 		sRectangleSize.cx += lFontHeight * 2;
 		sRectangleSize.cy += lFontHeight * 2;
 	}
