@@ -7,7 +7,7 @@ namespace Stamp
 	struct StampIndent
 	{
 	public:
-		BYTE cbTop, cbRight, cbBottom, cbLeft;
-		static StampIndent GetDefault();
+		BYTE m_cbTop, m_cbRight, m_cbBottom, m_cbLeft;
+		StampIndent();
 	};
 }

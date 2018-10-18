@@ -2,13 +2,11 @@
 
 namespace Stamp
 {
-	StampIndent StampIndent::GetDefault()
+	StampIndent::StampIndent()
 	{
-		StampIndent sStampIndent;
-		sStampIndent.cbBottom = 10;
-		sStampIndent.cbLeft = 10;
-		sStampIndent.cbRight = 10;
-		sStampIndent.cbTop = 10;
-		return sStampIndent;
+		m_cbBottom = 10;
+		m_cbLeft = 10;
+		m_cbRight = 10;
+		m_cbTop = 10;
 	}
 }
