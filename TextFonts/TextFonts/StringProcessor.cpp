@@ -31,7 +31,7 @@ namespace Stamp
 	LPTSTR StringProcessor::DeleteLastChar(LPTSTR lpsOriginalString)
 	{
 		int iStringLength = lstrlen(lpsOriginalString);
-		if (iStringLength == 0)
+		if (iStringLength < 2) 
 		{
 			return GetEmptyString();
 		}
