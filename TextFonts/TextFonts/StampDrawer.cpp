@@ -36,17 +36,18 @@ namespace Stamp
 		}
 
 		m_hBackgroundImage = hNewBitmap;
-		m_bIsBackgroundInherited = FALSE;
 		return TRUE;
 	}
 
 	BOOL StampDrawer::DeleteBackgroundImage()
 	{
-		if ((m_hBackgroundImage == NULL) || m_bIsBackgroundInherited)
+		if (m_hBackgroundImage == NULL)
 		{
 			return TRUE;
 		}
-		return DeleteObject(m_hBackgroundImage);
+		BOOL bResult = DeleteObject(m_hBackgroundImage);
+		m_hBackgroundImage = NULL;
+		return bResult;
 	}
 
 	LPTSTR StampDrawer::GetText()
@@ -158,19 +159,17 @@ namespace Stamp
 		}
 
 		BOOL bResult = TRUE;
-		m_hWnd = sStampDrawer->m_hWnd;
 
 		DeleteBackgroundImage();
-		m_hBackgroundImage = sStampDrawer->m_hBackgroundImage;
-		if (m_hBackgroundImage == NULL)
+		if (sStampDrawer->m_hBackgroundImage == NULL)
 		{
-			m_bIsBackgroundInherited = FALSE;
+			m_hBackgroundImage = NULL;
 		}
 		else
 		{
-			m_bIsBackgroundInherited = TRUE;
+			m_hBackgroundImage = (HBITMAP)CopyImage(sStampDrawer->m_hBackgroundImage, IMAGE_BITMAP, 0, 0, 0);
+			bResult &= (m_hBackgroundImage == NULL);
 		}
-		m_crImageBackgroundColor = sStampDrawer->m_crImageBackgroundColor;
 		
 		LPTSTR lpsText = sStampDrawer->GetText();
 		if (lpsText == NULL)
@@ -179,6 +178,7 @@ namespace Stamp
 		}
 		else
 		{
+			free(m_lpsText);
 			m_lpsText = lpsText;
 		}
 
@@ -187,10 +187,7 @@ namespace Stamp
 
 		if (!SetFontHeight(sStampDrawer->m_lFontHeight))
 		{
-			if (!SetFontHeight(GetMaxFontHeight()))
-			{
-				bResult &= SetFontHeight(0);
-			}
+			bResult &= SetFontHeight(GetMaxFontHeight());
 		}
 		return bResult;
 	}
@@ -221,8 +218,7 @@ namespace Stamp
 
 	StampDrawer::StampDrawer(HWND hWnd, COLORREF crImageBackgroundColor)
 		: m_hWnd(hWnd), m_crImageBackgroundColor(crImageBackgroundColor), 
-		m_hBackgroundImage(NULL), m_bIsBackgroundInherited(FALSE), 
-		m_lpsText(StringProcessor::GetEmptyString())
+		m_hBackgroundImage(NULL), m_lpsText(StringProcessor::GetEmptyString())
 	{
 		UpdateStampSize();
 		if (!SetFontHeight(WindowProcessor::GetWindowFontHeight(hWnd)))
@@ -233,10 +229,7 @@ namespace Stamp
 
 	StampDrawer::~StampDrawer()
 	{
-		if ((m_hBackgroundImage != NULL) && !m_bIsBackgroundInherited)
-		{
-			DeleteObject(m_hBackgroundImage);
-		}
+		DeleteBackgroundImage();
 		free(m_lpsText);
 	}
 }

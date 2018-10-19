@@ -13,15 +13,15 @@ namespace Stamp
 		BOOL LoadBackgroundImage(char psFileName[]);
 		BOOL DeleteBackgroundImage();
 
-		LPTSTR GetText();
+		virtual LPTSTR GetText();
 		virtual BOOL SetText(LPTSTR lpsNewText);
 
-		LONG GetFontHeight();
+		virtual LONG GetFontHeight();
 		virtual BOOL SetFontHeight(LONG lFontHeight);
 		virtual BOOL IncrementFontSize();
 		virtual BOOL DecrementFontSize();
 
-		StampIndent GetStampIndent();
+		virtual StampIndent GetStampIndent();
 		virtual BOOL SetStampIndent(StampIndent sStampIndent);
 		virtual BOOL IncrementStampIndent();
 		virtual BOOL DecrementStampIndent();
@@ -39,7 +39,6 @@ namespace Stamp
 		HWND m_hWnd;
 		HBITMAP m_hBackgroundImage;
 		COLORREF m_crImageBackgroundColor;
-		BOOL m_bIsBackgroundInherited;
 		LPTSTR m_lpsText;
 		LONG m_lFontHeight;
 		COORD m_cStampCoordinates;
