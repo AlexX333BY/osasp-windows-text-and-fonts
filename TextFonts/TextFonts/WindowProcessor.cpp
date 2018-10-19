@@ -20,4 +20,16 @@ namespace Stamp
 		sWndSize.cy = rWndRect.bottom - rWndRect.top;
 		return sWndSize;
 	}
+
+	int WindowProcessor::FillWindowWithColor(HWND hWnd, COLORREF crColor)
+	{
+		RECT rWndRect;
+		GetClientRect(hWnd, &rWndRect);
+		HDC hWndDC = GetDC(hWnd);
+		HBRUSH hBrush = CreateSolidBrush(crColor);
+		int iResult = FillRect(hWndDC, &rWndRect, hBrush);
+		DeleteObject(hBrush);
+		ReleaseDC(hWnd, hWndDC);
+		return iResult;
+	}
 }
