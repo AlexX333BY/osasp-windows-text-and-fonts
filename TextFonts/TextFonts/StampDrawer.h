@@ -34,8 +34,6 @@ namespace Stamp
 		~StampDrawer();
 	protected:
 		static BOOL IsBetween(INT64 iValue, INT64 iLeftBound, INT64 iRightBound);
-		static LONG GetWindowFontHeight(HWND hWnd);
-		static SIZE GetWindowSize(HWND hWnd);
 		LONG GetMaxFontHeight();
 
 		HWND m_hWnd;

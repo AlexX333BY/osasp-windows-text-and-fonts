@@ -1,5 +1,6 @@
 #include "StampDrawer.h"
 #include "StringProcessor.h"
+#include "WindowProcessor.h"
 #include <gdiplus.h>
 #include <strsafe.h>
 
@@ -158,28 +159,9 @@ namespace Stamp
 		return (iValue >= iLeftBound) && (iValue <= iRightBound);
 	}
 
-	LONG StampDrawer::GetWindowFontHeight(HWND hWnd)
-	{
-		HDC hWndDC = GetDC(hWnd);
-		TEXTMETRIC tmTextMetric;
-		GetTextMetrics(hWndDC, &tmTextMetric);
-		ReleaseDC(hWnd, hWndDC);
-		return tmTextMetric.tmHeight;
-	}
-
-	SIZE StampDrawer::GetWindowSize(HWND hWnd)
-	{
-		RECT rWndRect;
-		GetClientRect(hWnd, &rWndRect);
-		SIZE sWndSize;
-		sWndSize.cx = rWndRect.right - rWndRect.left;
-		sWndSize.cy = rWndRect.bottom - rWndRect.top;
-		return sWndSize;
-	}
-
 	LONG StampDrawer::GetMaxFontHeight()
 	{
-		SIZE sWindowSize = GetWindowSize(m_hWnd);
+		SIZE sWindowSize = WindowProcessor::GetWindowSize(m_hWnd);
 		return min(min(m_cStampCoordinates.X, m_cStampCoordinates.Y), 
 			min(sWindowSize.cx - m_cStampCoordinates.X - m_sStampSize.cx, 
 				sWindowSize.cy - m_cStampCoordinates.Y - m_sStampSize.cy));
@@ -188,12 +170,12 @@ namespace Stamp
 	StampDrawer::StampDrawer(HWND hWnd, COLORREF crImageBackgroundColor) 
 		: m_hWnd(hWnd), m_dwImageBackgroundColor(crImageBackgroundColor), 
 		m_hBackgroundImage(NULL), m_lpsText(StringProcessor::GetEmptyString()), 
-		m_lFontHeight(GetWindowFontHeight(hWnd))
+		m_lFontHeight(WindowProcessor::GetWindowFontHeight(hWnd))
 	{ }
 
 	StampDrawer::~StampDrawer()
 	{
-		if (!m_bIsBackgroundInherited)
+		if ((m_hBackgroundImage != NULL) && !m_bIsBackgroundInherited)
 		{
 			DeleteObject(m_hBackgroundImage);
 		}
