@@ -26,9 +26,9 @@ namespace Stamp
 		virtual BOOL IncrementStampIndent();
 		virtual BOOL DecrementStampIndent();
 
-		virtual BOOL UpdateStampSize();
+		virtual void UpdateStampSize();
 
-		BOOL SetByAnother(const StampDrawer *sStampDrawer);
+		BOOL SetByAnother(StampDrawer *sStampDrawer);
 
 		StampDrawer(HWND hWnd, COLORREF crImageBackgroundColor);
 		~StampDrawer();
@@ -38,7 +38,7 @@ namespace Stamp
 
 		HWND m_hWnd;
 		HBITMAP m_hBackgroundImage;
-		COLORREF m_dwImageBackgroundColor;
+		COLORREF m_crImageBackgroundColor;
 		BOOL m_bIsBackgroundInherited;
 		LPTSTR m_lpsText;
 		LONG m_lFontHeight;

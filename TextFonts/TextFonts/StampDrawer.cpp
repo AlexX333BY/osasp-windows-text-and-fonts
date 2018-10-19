@@ -19,7 +19,7 @@ namespace Stamp
 		Gdiplus::Bitmap *sourceImage = Gdiplus::Bitmap::FromFile(cWideCharFileName);
 		HBITMAP hNewBitmap;
 		Gdiplus::Color imageBackgroundColor;
-		imageBackgroundColor.SetFromCOLORREF(m_dwImageBackgroundColor);
+		imageBackgroundColor.SetFromCOLORREF(m_crImageBackgroundColor);
 		Gdiplus::Status bitmapStatus = sourceImage->GetHBITMAP(imageBackgroundColor, &hNewBitmap);
 
 		Gdiplus::GdiplusShutdown(ulpGdiplusToken);
@@ -154,6 +154,62 @@ namespace Stamp
 		return SetStampIndent(sNewStampIndent);
 	}
 
+	BOOL StampDrawer::SetByAnother(StampDrawer *sStampDrawer)
+	{
+		if (sStampDrawer == NULL)
+		{
+			return FALSE;
+		}
+
+		BOOL bResult = TRUE;
+		m_hWnd = sStampDrawer->m_hWnd;
+
+		DeleteBackgroundImage();
+		m_hBackgroundImage = sStampDrawer->m_hBackgroundImage;
+		if (m_hBackgroundImage == NULL)
+		{
+			m_bIsBackgroundInherited = FALSE;
+		}
+		else
+		{
+			m_bIsBackgroundInherited = TRUE;
+		}
+		m_crImageBackgroundColor = sStampDrawer->m_crImageBackgroundColor;
+		
+		LPTSTR lpsText = sStampDrawer->GetText();
+		if (lpsText == NULL)
+		{
+			bResult &= FALSE;
+		}
+		else
+		{
+			m_lpsText = lpsText;
+		}
+
+		bResult &= SetStampIndent(sStampDrawer->GetStampIndent());
+		UpdateStampSize();
+
+		if (!SetFontHeight(sStampDrawer->m_lFontHeight))
+		{
+			if (!SetFontHeight(GetMaxFontHeight()))
+			{
+				bResult &= SetFontHeight(0);
+			}
+		}
+		return bResult;
+	}
+
+	void StampDrawer::UpdateStampSize()
+	{
+		SIZE sWndSize = WindowProcessor::GetWindowSize(m_hWnd);
+		m_cStampCoordinates.X = (SHORT)(sWndSize.cx * m_sStampIndent.m_cbLeft / 100);
+		m_cStampCoordinates.Y = (SHORT)(sWndSize.cy * m_sStampIndent.m_cbTop / 100);
+		m_sStampSize.cx = (SHORT)(sWndSize.cx * (100 - m_sStampIndent.m_cbLeft
+			- m_sStampIndent.m_cbRight) / 100);
+		m_sStampSize.cy = (SHORT)(sWndSize.cy * (100 - m_sStampIndent.m_cbBottom
+			- m_sStampIndent.m_cbTop) / 100);
+	}
+
 	BOOL StampDrawer::IsBetween(INT64 iValue, INT64 iLeftBound, INT64 iRightBound)
 	{
 		return (iValue >= iLeftBound) && (iValue <= iRightBound);
@@ -167,11 +223,17 @@ namespace Stamp
 				sWindowSize.cy - m_cStampCoordinates.Y - m_sStampSize.cy));
 	}
 
-	StampDrawer::StampDrawer(HWND hWnd, COLORREF crImageBackgroundColor) 
-		: m_hWnd(hWnd), m_dwImageBackgroundColor(crImageBackgroundColor), 
-		m_hBackgroundImage(NULL), m_lpsText(StringProcessor::GetEmptyString()), 
-		m_lFontHeight(WindowProcessor::GetWindowFontHeight(hWnd))
-	{ }
+	StampDrawer::StampDrawer(HWND hWnd, COLORREF crImageBackgroundColor)
+		: m_hWnd(hWnd), m_crImageBackgroundColor(crImageBackgroundColor), 
+		m_hBackgroundImage(NULL), m_bIsBackgroundInherited(FALSE), 
+		m_lpsText(StringProcessor::GetEmptyString())
+	{
+		UpdateStampSize();
+		if (!SetFontHeight(WindowProcessor::GetWindowFontHeight(hWnd)))
+		{
+			SetFontHeight(GetMaxFontHeight());
+		}
+	}
 
 	StampDrawer::~StampDrawer()
 	{
