@@ -30,10 +30,7 @@ namespace Stamp
 			return FALSE;
 		}
 
-		if (m_hBackgroundImage != NULL)
-		{
-			DeleteObject(m_hBackgroundImage);
-		}
+		DeleteBackgroundImage();
 
 		m_hBackgroundImage = hNewBitmap;
 		return TRUE;
