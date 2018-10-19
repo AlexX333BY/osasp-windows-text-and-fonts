@@ -66,4 +66,12 @@ namespace Stamp
 			return NULL;
 		}
 	}
+
+	LPTSTR StringProcessor::CreateStringByChar(TCHAR cChar)
+	{
+		LPTSTR lpsCharString = (LPTSTR)calloc(2, sizeof(TCHAR));
+		lpsCharString[0] = cChar;
+		lpsCharString[1] = '\0';
+		return lpsCharString;
+	}
 }

@@ -11,5 +11,6 @@ namespace Stamp
 		static LPTSTR GetEmptyString();
 		static LPTSTR DeleteLastChar(LPTSTR lpsOriginalString);
 		static LPTSTR AddChar(LPTSTR lpsOriginalString, TCHAR cCharToAdd);
+		static LPTSTR CreateStringByChar(TCHAR cChar);
 	};
 }
