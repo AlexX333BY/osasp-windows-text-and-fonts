@@ -15,6 +15,8 @@ namespace Stamp
 
 		virtual LPTSTR GetText();
 		virtual BOOL SetText(LPTSTR lpsNewText);
+		virtual BOOL AddSymbol(TCHAR cSymbol);
+		virtual BOOL DeleteLastSymbol();
 
 		virtual LONG GetFontHeight();
 		virtual BOOL SetFontHeight(LONG lFontHeight);

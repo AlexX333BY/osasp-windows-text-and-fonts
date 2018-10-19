@@ -74,6 +74,36 @@ namespace Stamp
 		}
 	}
 
+	BOOL StampDrawer::AddSymbol(TCHAR cSymbol)
+	{
+		LPTSTR lpsNewText = StringProcessor::AddChar(m_lpsText, cSymbol);
+		if (lpsNewText == NULL)
+		{
+			return FALSE;
+		}
+		else
+		{
+			free(m_lpsText);
+			m_lpsText = lpsNewText;
+			return TRUE;
+		}
+	}
+
+	BOOL StampDrawer::DeleteLastSymbol()
+	{
+		LPTSTR lpsNewText = StringProcessor::DeleteLastChar(m_lpsText);
+		if (lpsNewText == NULL)
+		{
+			return FALSE;
+		}
+		else
+		{
+			free(m_lpsText);
+			m_lpsText = lpsNewText;
+			return TRUE;
+		}
+	}
+
 	LONG StampDrawer::GetFontHeight()
 	{
 		return m_lFontHeight;
