@@ -4,7 +4,7 @@
 
 namespace Stamp
 {
-	static class WindowProcessor
+	class WindowProcessor
 	{
 	public:
 		static LONG GetWindowFontHeight(HWND hWnd);

@@ -4,7 +4,7 @@
 
 namespace Stamp
 {
-	static class XformCreator
+	class XformCreator
 	{
 	public:
 		static XFORM CreateRotationXform(WORD wDegreeAngle);

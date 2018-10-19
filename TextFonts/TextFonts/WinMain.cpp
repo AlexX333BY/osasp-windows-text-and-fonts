@@ -74,7 +74,7 @@ LoadResult LoadStampBackground(HWND hWnd, StampDrawer *sStampDrawer)
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	StampDrawer *sStampDrawer = new RectangleStampDrawer(hWnd, GetBackgroundColor());
+	static StampDrawer *sStampDrawer = new RectangleStampDrawer(hWnd, GetBackgroundColor());
 
 	switch (message)
 	{
@@ -84,7 +84,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		DefWindowProc(hWnd, message, wParam, lParam);
 		break;
 	case WM_CHAR:
-		LPTSTR lpsNewText;
 		switch (wParam)
 		{
 		case VK_BACK:

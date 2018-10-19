@@ -4,7 +4,7 @@
 
 namespace Stamp
 {
-	static class StringProcessor
+	class StringProcessor
 	{
 	public:
 		static LPTSTR CopyString(LPTSTR lpsOriginalString);

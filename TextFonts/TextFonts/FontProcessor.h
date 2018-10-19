@@ -4,7 +4,7 @@
 
 namespace Stamp
 {
-	static class FontProcessor
+	class FontProcessor
 	{
 	public:
 		static HFONT CreateFontByHeight(HWND hWnd, LONG lHeight);

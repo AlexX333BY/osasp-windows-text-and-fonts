@@ -4,7 +4,7 @@
 
 namespace Stamp
 {
-	static class BitmapProcessor
+	class BitmapProcessor
 	{
 	public:
 		static SIZE GetBitmapSize(HBITMAP hBitmap);
