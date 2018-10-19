@@ -148,6 +148,16 @@ namespace Stamp
 		return SetStampIndent(sNewStampIndent);
 	}
 
+	COLORREF StampDrawer::GetImageBackgroundColor()
+	{
+		return m_crImageBackgroundColor;
+	}
+
+	void StampDrawer::SetImageBackgroundColor(COLORREF crNewColor)
+	{
+		m_crImageBackgroundColor = crNewColor;
+	}
+
 	BOOL StampDrawer::SetByAnother(StampDrawer *sStampDrawer)
 	{
 		if (sStampDrawer == NULL)

@@ -26,6 +26,9 @@ namespace Stamp
 		virtual BOOL IncrementStampIndent();
 		virtual BOOL DecrementStampIndent();
 
+		virtual COLORREF GetImageBackgroundColor();
+		virtual void SetImageBackgroundColor(COLORREF crNewColor);
+
 		virtual void UpdateStampSize();
 
 		BOOL SetByAnother(StampDrawer *sStampDrawer);
