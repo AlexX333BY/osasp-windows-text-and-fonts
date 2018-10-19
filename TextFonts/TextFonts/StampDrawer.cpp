@@ -46,11 +46,7 @@ namespace Stamp
 		{
 			return TRUE;
 		}
-		if (!DeleteObject(m_hBackgroundImage))
-		{
-			return FALSE;
-		}
-		return Draw();
+		return DeleteObject(m_hBackgroundImage);
 	}
 
 	LPTSTR StampDrawer::GetText()
