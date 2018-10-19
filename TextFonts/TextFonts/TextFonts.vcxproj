@@ -118,7 +118,25 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BitmapProcessor.cpp" />
+    <ClCompile Include="FontProcessor.cpp" />
+    <ClCompile Include="RectangleStampDrawer.cpp" />
+    <ClCompile Include="StampDrawer.cpp" />
+    <ClCompile Include="StampIndent.cpp" />
+    <ClCompile Include="StringProcessor.cpp" />
+    <ClCompile Include="WindowProcessor.cpp" />
     <ClCompile Include="WinMain.cpp" />
+    <ClCompile Include="XformCreator.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="BitmapProcessor.h" />
+    <ClInclude Include="FontProcessor.h" />
+    <ClInclude Include="RectangleStampDrawer.h" />
+    <ClInclude Include="StampDrawer.h" />
+    <ClInclude Include="StampIndent.h" />
+    <ClInclude Include="StringProcessor.h" />
+    <ClInclude Include="WindowProcessor.h" />
+    <ClInclude Include="XformCreator.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
