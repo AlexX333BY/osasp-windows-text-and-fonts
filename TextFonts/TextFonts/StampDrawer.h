@@ -12,11 +12,13 @@ namespace Stamp
 
 		BOOL LoadBackgroundImage(char psFileName[]);
 		BOOL DeleteBackgroundImage();
+		BOOL HasStampImage();
 
 		virtual LPTSTR GetText();
 		virtual BOOL SetText(LPTSTR lpsNewText);
 		virtual BOOL AddSymbol(TCHAR cSymbol);
 		virtual BOOL DeleteLastSymbol();
+		virtual int GetTextLength();
 
 		virtual LONG GetFontHeight();
 		virtual BOOL SetFontHeight(LONG lFontHeight);

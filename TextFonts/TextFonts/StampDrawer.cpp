@@ -47,6 +47,11 @@ namespace Stamp
 		return bResult;
 	}
 
+	BOOL StampDrawer::HasStampImage()
+	{
+		return m_hBackgroundImage != NULL;
+	}
+
 	LPTSTR StampDrawer::GetText()
 	{
 		return StringProcessor::CopyString(m_lpsText);
@@ -102,6 +107,11 @@ namespace Stamp
 			m_lpsText = lpsNewText;
 			return TRUE;
 		}
+	}
+
+	int StampDrawer::GetTextLength()
+	{
+		return lstrlen(m_lpsText);
 	}
 
 	LONG StampDrawer::GetFontHeight()
@@ -257,6 +267,8 @@ namespace Stamp
 		: m_hWnd(hWnd), m_crImageBackgroundColor(crImageBackgroundColor), 
 		m_hBackgroundImage(NULL), m_lpsText(StringProcessor::GetEmptyString())
 	{
+		StampIndent sStampIndent;
+		m_sStampIndent = sStampIndent;
 		UpdateStampSize();
 		if (!SetFontHeight(WindowProcessor::GetWindowFontHeight(hWnd)))
 		{
