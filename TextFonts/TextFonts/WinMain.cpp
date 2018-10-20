@@ -58,9 +58,7 @@ LoadResult LoadStampBackground(HWND hWnd, StampDrawer *sStampDrawer)
 
 	if (GetOpenFileName(&oOpenFileName))
 	{
-		BOOL bLoadResult = sStampDrawer->LoadBackgroundImage(psFileName);
-		free(psFileName);
-		if (bLoadResult)
+		if (sStampDrawer->LoadBackgroundImage(psFileName))
 		{
 			return LR_OK;
 		}
@@ -191,7 +189,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, 
 		hInstance, NULL);
 	ShowWindow(hWnd, nCmdShow);
-	UpdateWindow(hWnd);
 
 	MSG msg;
 	while (GetMessage(&msg, NULL, 0, 0))
