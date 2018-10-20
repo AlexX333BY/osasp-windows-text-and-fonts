@@ -123,6 +123,7 @@
     <ClCompile Include="RectangleStampDrawer.cpp" />
     <ClCompile Include="StampDrawer.cpp" />
     <ClCompile Include="StampIndent.cpp" />
+    <ClCompile Include="StampWindowController.cpp" />
     <ClCompile Include="StringProcessor.cpp" />
     <ClCompile Include="WindowProcessor.cpp" />
     <ClCompile Include="WinMain.cpp" />
@@ -134,6 +135,7 @@
     <ClInclude Include="RectangleStampDrawer.h" />
     <ClInclude Include="StampDrawer.h" />
     <ClInclude Include="StampIndent.h" />
+    <ClInclude Include="StampWindowController.h" />
     <ClInclude Include="StringProcessor.h" />
     <ClInclude Include="WindowProcessor.h" />
     <ClInclude Include="XformCreator.h" />

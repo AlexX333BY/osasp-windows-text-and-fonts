@@ -1,172 +1,25 @@
 #include <windows.h>
-#include "StampDrawer.h"
-#include "RectangleStampDrawer.h"
-
-#define _USE_MATH_DEFINES 
-
-#include <cmath>
-
-using namespace Stamp;
-
-#define WM_DRAW_STAMP WM_USER
-
-DWORD GetBackgroundColor()
-{
-	return GetSysColor(COLOR_WINDOW);
-}
-
-BOOL PostDrawStampMessage(HWND hWnd)
-{
-	return PostMessage(hWnd, WM_DRAW_STAMP, NULL, NULL);
-}
-
-BOOL PostWmSizeMessage(HWND hWnd)
-{
-	return PostMessage(hWnd, WM_SIZE, NULL, NULL);
-}
-
-typedef enum LoadResult
-{
-	LR_OK = 0,
-	LR_CANCELLED_BY_USER = 1,
-	LR_ERROR = -1,
-} _LoadResult;
-
-LoadResult LoadStampBackground(HWND hWnd, StampDrawer *sStampDrawer)
-{
-	if (sStampDrawer == NULL)
-	{
-		return LR_ERROR;
-	}
-
-	char psFileName[MAX_PATH] = { '\0' };
-
-	OPENFILENAME oOpenFileName;
-	oOpenFileName.lStructSize = sizeof(OPENFILENAME);
-	oOpenFileName.hwndOwner = hWnd;
-	oOpenFileName.hInstance = NULL;
-	oOpenFileName.lpstrFilter = "Images\0*.bmp;*.gif;*.jpeg;*.png;*.tiff;*.exif;*.wmf;*.emf;*.jpg\0\0";
-	oOpenFileName.lpstrCustomFilter = NULL;
-	oOpenFileName.nFilterIndex = 1;
-	oOpenFileName.lpstrFile = psFileName;
-	oOpenFileName.nMaxFile = sizeof(psFileName);
-	oOpenFileName.lpstrFileTitle = NULL;
-	oOpenFileName.lpstrInitialDir = NULL;
-	oOpenFileName.lpstrTitle = "Select stamp background";
-	oOpenFileName.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
-	oOpenFileName.lpstrDefExt = NULL;
-
-	if (GetOpenFileName(&oOpenFileName))
-	{
-		if (sStampDrawer->LoadBackgroundImage(psFileName))
-		{
-			return LR_OK;
-		}
-		else
-		{
-			return LR_ERROR;
-		}
-	}
-	return LR_CANCELLED_BY_USER;
-}
+#include "StampWindowController.h"
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	static StampDrawer *sStampDrawer;
+	static Stamp::StampWindowController *sStampWindowController = NULL;
 
 	switch (message)
 	{
-	case WM_SIZE:
-		sStampDrawer->UpdateStampSize();
-		PostDrawStampMessage(hWnd);
-		DefWindowProc(hWnd, message, wParam, lParam);
-		break;
-	case WM_CHAR:
-		switch (wParam)
+	case WM_CREATE:
+		sStampWindowController = new Stamp::StampWindowController(hWnd, 
+			Stamp::StampWindowController::GetDefaultBackgroundColor());
+	default:
+		if (sStampWindowController != NULL)
 		{
-		case VK_BACK:
-			if (sStampDrawer->GetTextLength() > 0)
-			{
-				sStampDrawer->DeleteLastSymbol();
-				PostDrawStampMessage(hWnd);
-			}
-			break;
-		case VK_RETURN:
-		case VK_ESCAPE:
-			break;
-		default:
-			sStampDrawer->AddSymbol((TCHAR)wParam);
-			PostDrawStampMessage(hWnd);
-		}
-		break;
-	case WM_KEYDOWN:
-		switch (wParam)
-		{
-		case VK_F2:
-			if (LoadStampBackground(hWnd, sStampDrawer) == LR_OK)
-			{
-				PostDrawStampMessage(hWnd);
-			}
-			break;
-		case VK_F3:
-			if (sStampDrawer->HasStampImage())
-			{
-				sStampDrawer->DeleteBackgroundImage();
-				PostDrawStampMessage(hWnd);
-			}
-			break;
-		}
-		break;
-	case WM_MOUSEWHEEL:
-		if (GET_KEYSTATE_WPARAM(wParam) == MK_SHIFT)
-		{
-			if (GET_WHEEL_DELTA_WPARAM(wParam) > 0)
-			{
-				if (sStampDrawer->IncrementStampIndent())
-				{
-					PostWmSizeMessage(hWnd);
-				}
-			}
-			else
-			{
-				if (sStampDrawer->DecrementStampIndent())
-				{
-					PostWmSizeMessage(hWnd);
-				}
-			}
+			return sStampWindowController->HandleMessage(message, wParam, lParam);
 		}
 		else
 		{
-			if (GET_WHEEL_DELTA_WPARAM(wParam) > 0)
-			{
-				if (sStampDrawer->IncrementFontSize())
-				{
-					PostDrawStampMessage(hWnd);
-				}
-			}
-			else
-			{
-				if (sStampDrawer->DecrementFontSize())
-				{
-					PostDrawStampMessage(hWnd);
-				}
-			}
+			return DefWindowProc(hWnd, message, wParam, lParam);
 		}
-		break;
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		break;
-	case WM_CREATE:
-		/* just to be sure that window has already been initialized with size*/
-		sStampDrawer = new RectangleStampDrawer(hWnd, GetBackgroundColor());
-		return DefWindowProc(hWnd, message, wParam, lParam);
-	case WM_DRAW_STAMP:
-		sStampDrawer->Draw();
-		break;
-	default:
-		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
-	return 0;
 }
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, 
@@ -183,7 +36,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	wndClassEx.hInstance = hInstance;
 	wndClassEx.hIcon = NULL;
 	wndClassEx.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wndClassEx.hbrBackground = CreateSolidBrush(GetBackgroundColor());
+	wndClassEx.hbrBackground = CreateSolidBrush(Stamp::StampWindowController::GetDefaultBackgroundColor());
 	wndClassEx.lpszMenuName = NULL;
 	wndClassEx.lpszClassName = spWndClassName;
 	wndClassEx.hIconSm = NULL;
