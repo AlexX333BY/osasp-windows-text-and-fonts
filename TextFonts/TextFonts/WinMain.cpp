@@ -1,24 +1,17 @@
 #include <windows.h>
 #include "StampWindowController.h"
+#include "RectangleStampDrawer.h"
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	static Stamp::StampWindowController *sStampWindowController = NULL;
+	static Stamp::StampWindowController *sStampWindowController = new Stamp::StampWindowController();
 
 	switch (message)
 	{
 	case WM_CREATE:
-		sStampWindowController = new Stamp::StampWindowController(hWnd, 
-			Stamp::StampWindowController::GetDefaultBackgroundColor());
+		sStampWindowController->AddDrawer(new Stamp::RectangleStampDrawer(hWnd, Stamp::StampWindowController::GetDefaultBackgroundColor()));
 	default:
-		if (sStampWindowController != NULL)
-		{
-			return sStampWindowController->HandleMessage(message, wParam, lParam);
-		}
-		else
-		{
-			return DefWindowProc(hWnd, message, wParam, lParam);
-		}
+		return sStampWindowController->HandleMessage(hWnd, message, wParam, lParam);
 	}
 }
 

@@ -15,20 +15,21 @@ namespace Stamp
 	class StampWindowController
 	{
 	public:
-		LRESULT HandleMessage(UINT message, WPARAM wParam, LPARAM lParam);
-		COLORREF GetBackgroundColor();
-		void SetBackgroundColor(COLORREF crBackgroundColor);
+		LRESULT HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 		static COLORREF GetDefaultBackgroundColor();
-		StampWindowController(HWND hWnd);
-		StampWindowController(HWND hWnd, COLORREF crBackgroundColor);
+		void ClearDrawers();
+		BOOL AddDrawer(StampDrawer *sStampDrawer);
+		size_t NextDrawer();
+		size_t GetDrawersCount();
+		StampWindowController();
 		~StampWindowController();
 	private:
-		BOOL PostDrawStampMessage();
-		BOOL PostSizeMessage();
-		LoadResult LoadStampBackground();
+		BOOL PostDrawStampMessage(HWND hWnd);
+		BOOL PostSizeMessage(HWND hWnd);
+		LoadResult LoadStampBackground(HWND hWnd);
 		static const UINT WM_DRAW_STAMP;
-		HWND m_hWnd;
-		StampDrawer *m_sStampDrawer;
-		COLORREF m_crBackgroundColor;
+		StampDrawer **m_asStampDrawers;
+		size_t m_uDrawersCount;
+		size_t m_uCurDrawer;
 	};
 }

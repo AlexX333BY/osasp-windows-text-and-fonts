@@ -5,47 +5,56 @@ namespace Stamp
 {
 	const UINT StampWindowController::WM_DRAW_STAMP = WM_USER;
 
-	LRESULT StampWindowController::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam)
+	LRESULT StampWindowController::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
+		if (m_asStampDrawers == NULL)
+		{
+			return DefWindowProc(hWnd, message, wParam, lParam);
+		}
+
 		switch (message)
 		{
 		case WM_SIZE:
-			m_sStampDrawer->UpdateStampSize();
-			PostDrawStampMessage();
-			return DefWindowProc(m_hWnd, message, wParam, lParam);
+			m_asStampDrawers[m_uCurDrawer]->UpdateStampSize();
+			PostDrawStampMessage(hWnd);
+			return DefWindowProc(hWnd, message, wParam, lParam);
 		case WM_CHAR:
 			switch (wParam)
 			{
 			case VK_BACK:
-				if (m_sStampDrawer->GetTextLength() > 0)
+				if (m_asStampDrawers[m_uCurDrawer]->GetTextLength() > 0)
 				{
-					m_sStampDrawer->DeleteLastSymbol();
-					PostDrawStampMessage();
+					m_asStampDrawers[m_uCurDrawer]->DeleteLastSymbol();
+					PostDrawStampMessage(hWnd);
 				}
 				break;
 			case VK_RETURN:
 			case VK_ESCAPE:
 				break;
 			default:
-				m_sStampDrawer->AddSymbol((TCHAR)wParam);
-				PostDrawStampMessage();
+				m_asStampDrawers[m_uCurDrawer]->AddSymbol((TCHAR)wParam);
+				PostDrawStampMessage(hWnd);
 			}
 			break;
 		case WM_KEYDOWN:
 			switch (wParam)
 			{
 			case VK_F2:
-				if (LoadStampBackground() == LR_OK)
+				if (LoadStampBackground(hWnd) == LR_OK)
 				{
-					PostDrawStampMessage();
+					PostDrawStampMessage(hWnd);
 				}
 				break;
 			case VK_F3:
-				if (m_sStampDrawer->HasStampImage())
+				if (m_asStampDrawers[m_uCurDrawer]->HasStampImage())
 				{
-					m_sStampDrawer->DeleteBackgroundImage();
-					PostDrawStampMessage();
+					m_asStampDrawers[m_uCurDrawer]->DeleteBackgroundImage();
+					PostDrawStampMessage(hWnd);
 				}
+				break;
+			case VK_F4:
+				NextDrawer();
+				PostDrawStampMessage(hWnd);
 				break;
 			}
 			break;
@@ -54,16 +63,16 @@ namespace Stamp
 			{
 				if (GET_WHEEL_DELTA_WPARAM(wParam) > 0)
 				{
-					if (m_sStampDrawer->IncrementStampIndent())
+					if (m_asStampDrawers[m_uCurDrawer]->IncrementStampIndent())
 					{
-						PostSizeMessage();
+						PostSizeMessage(hWnd);
 					}
 				}
 				else
 				{
-					if (m_sStampDrawer->DecrementStampIndent())
+					if (m_asStampDrawers[m_uCurDrawer]->DecrementStampIndent())
 					{
-						PostSizeMessage();
+						PostSizeMessage(hWnd);
 					}
 				}
 			}
@@ -71,16 +80,16 @@ namespace Stamp
 			{
 				if (GET_WHEEL_DELTA_WPARAM(wParam) > 0)
 				{
-					if (m_sStampDrawer->IncrementFontSize())
+					if (m_asStampDrawers[m_uCurDrawer]->IncrementFontSize())
 					{
-						PostDrawStampMessage();
+						PostDrawStampMessage(hWnd);
 					}
 				}
 				else
 				{
-					if (m_sStampDrawer->DecrementFontSize())
+					if (m_asStampDrawers[m_uCurDrawer]->DecrementFontSize())
 					{
-						PostDrawStampMessage();
+						PostDrawStampMessage(hWnd);
 					}
 				}
 			}
@@ -89,22 +98,12 @@ namespace Stamp
 			PostQuitMessage(0);
 			break;
 		case WM_DRAW_STAMP:
-			m_sStampDrawer->Draw();
+			m_asStampDrawers[m_uCurDrawer]->Draw();
 			break;
 		default:
-			return DefWindowProc(m_hWnd, message, wParam, lParam);
+			return DefWindowProc(hWnd, message, wParam, lParam);
 		}
 		return 0;
-	}
-
-	COLORREF StampWindowController::GetBackgroundColor()
-	{
-		return m_crBackgroundColor;
-	}
-
-	void StampWindowController::SetBackgroundColor(COLORREF crBackgroundColor)
-	{
-		m_crBackgroundColor = crBackgroundColor;
 	}
 
 	COLORREF StampWindowController::GetDefaultBackgroundColor()
@@ -112,13 +111,63 @@ namespace Stamp
 		return GetSysColor(COLOR_WINDOW);
 	}
 
-	LoadResult StampWindowController::LoadStampBackground()
+	void StampWindowController::ClearDrawers()
+	{
+		if (m_asStampDrawers != NULL)
+		{
+			for (size_t uDrawer = 0; uDrawer < m_uDrawersCount; uDrawer++)
+			{
+				delete m_asStampDrawers[uDrawer];
+			}
+			free(m_asStampDrawers);
+			m_asStampDrawers = NULL;
+			m_uDrawersCount = 0;
+		}
+	}
+
+	BOOL StampWindowController::AddDrawer(StampDrawer *sStampDrawer)
+	{
+		if (sStampDrawer == NULL)
+		{
+			return FALSE;
+		}
+		StampDrawer **asNewStampDrawers = (StampDrawer **)realloc(m_asStampDrawers, (++m_uDrawersCount) * sizeof(StampDrawer *));
+		if (asNewStampDrawers == NULL)
+		{
+			return FALSE;
+		}
+		else
+		{
+			asNewStampDrawers[m_uDrawersCount - 1] = sStampDrawer;
+			m_asStampDrawers = asNewStampDrawers;
+			return TRUE;
+		}
+	}
+
+	size_t StampWindowController::NextDrawer()
+	{
+		if ((m_asStampDrawers == NULL) || (m_uDrawersCount < 2))
+		{
+			return 0;
+		}
+
+		m_asStampDrawers[(m_uCurDrawer + 1) % m_uDrawersCount]->SetByAnother(m_asStampDrawers[m_uCurDrawer]);
+		m_uCurDrawer = (m_uCurDrawer + 1) % m_uDrawersCount;
+		return m_uCurDrawer;
+	}
+
+	size_t StampWindowController::GetDrawersCount()
+	{
+		return m_uDrawersCount;
+	}
+
+	LoadResult StampWindowController::LoadStampBackground(HWND hWnd)
 	{
 		char psFileName[MAX_PATH] = { '\0' };
 
 		OPENFILENAME oOpenFileName;
 		oOpenFileName.lStructSize = sizeof(OPENFILENAME);
-		oOpenFileName.hwndOwner = m_hWnd;
+		oOpenFileName.hwndOwner = hWnd;
 		oOpenFileName.hInstance = NULL;
 		oOpenFileName.lpstrFilter = "Images\0*.bmp;*.gif;*.jpeg;*.png;*.tiff;*.exif;*.wmf;*.emf;*.jpg\0\0";
 		oOpenFileName.lpstrCustomFilter = NULL;
@@ -133,7 +182,7 @@ namespace Stamp
 
 		if (GetOpenFileName(&oOpenFileName))
 		{
-			if (m_sStampDrawer->LoadBackgroundImage(psFileName))
+			if (m_asStampDrawers[m_uCurDrawer]->LoadBackgroundImage(psFileName))
 			{
 				return LR_OK;
 			}
@@ -145,30 +194,22 @@ namespace Stamp
 		return LR_CANCELLED_BY_USER;
 	}
 
-	BOOL StampWindowController::PostDrawStampMessage()
+	BOOL StampWindowController::PostDrawStampMessage(HWND hWnd)
 	{
-		return PostMessage(m_hWnd, WM_DRAW_STAMP, NULL, NULL);
+		return PostMessage(hWnd, WM_DRAW_STAMP, NULL, NULL);
 	}
 
-	BOOL StampWindowController::PostSizeMessage()
+	BOOL StampWindowController::PostSizeMessage(HWND hWnd)
 	{
-		return PostMessage(m_hWnd, WM_SIZE, NULL, NULL);
+		return PostMessage(hWnd, WM_SIZE, NULL, NULL);
 	}
 
-	StampWindowController::StampWindowController(HWND hWnd) 
-		: StampWindowController::StampWindowController(hWnd, GetDefaultBackgroundColor())
-	{ }
-
-	StampWindowController::StampWindowController(HWND hWnd, COLORREF crBackgroundColor) 
-		: m_sStampDrawer(new RectangleStampDrawer(hWnd, crBackgroundColor)), 
-		m_crBackgroundColor(crBackgroundColor), m_hWnd(hWnd)
+	StampWindowController::StampWindowController() : m_asStampDrawers(NULL),
+		m_uDrawersCount(0)
 	{ }
 
 	StampWindowController::~StampWindowController()
 	{
-		if (m_sStampDrawer != NULL)
-		{
-			delete m_sStampDrawer;
-		}
+		ClearDrawers();
 	}
 }
