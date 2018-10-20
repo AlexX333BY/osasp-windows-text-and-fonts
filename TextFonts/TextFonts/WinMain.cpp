@@ -72,7 +72,7 @@ LoadResult LoadStampBackground(HWND hWnd, StampDrawer *sStampDrawer)
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	static StampDrawer *sStampDrawer = new RectangleStampDrawer(hWnd, GetBackgroundColor());
+	static StampDrawer *sStampDrawer;
 
 	switch (message)
 	{
@@ -156,6 +156,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
+	case WM_CREATE:
+		/* just to be sure that window has already been initialized with size*/
+		sStampDrawer = new RectangleStampDrawer(hWnd, GetBackgroundColor());
+		return DefWindowProc(hWnd, message, wParam, lParam);
 	case WM_DRAW_STAMP:
 		sStampDrawer->Draw();
 		break;
