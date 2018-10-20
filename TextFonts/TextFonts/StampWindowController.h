@@ -16,7 +16,6 @@ namespace Stamp
 	{
 	public:
 		LRESULT HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-		static COLORREF GetDefaultBackgroundColor();
 		void ClearDrawers();
 		BOOL AddDrawer(StampDrawer *sStampDrawer);
 		size_t NextDrawer();

@@ -32,4 +32,10 @@ namespace Stamp
 		ReleaseDC(hWnd, hWndDC);
 		return iResult;
 	}
+
+	COLORREF WindowProcessor::GetDefaultBackgroundColor()
+	{
+		return GetSysColor(COLOR_WINDOW);
+	}
+
 }

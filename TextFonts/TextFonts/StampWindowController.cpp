@@ -106,11 +106,6 @@ namespace Stamp
 		return 0;
 	}
 
-	COLORREF StampWindowController::GetDefaultBackgroundColor()
-	{
-		return GetSysColor(COLOR_WINDOW);
-	}
-
 	void StampWindowController::ClearDrawers()
 	{
 		if (m_asStampDrawers != NULL)

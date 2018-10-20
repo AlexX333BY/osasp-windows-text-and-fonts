@@ -1,6 +1,7 @@
 #include <windows.h>
 #include "StampWindowController.h"
 #include "RectangleStampDrawer.h"
+#include "WindowProcessor.h"
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -9,7 +10,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	switch (message)
 	{
 	case WM_CREATE:
-		sStampWindowController->AddDrawer(new Stamp::RectangleStampDrawer(hWnd, Stamp::StampWindowController::GetDefaultBackgroundColor()));
+		sStampWindowController->AddDrawer(new Stamp::RectangleStampDrawer(hWnd, Stamp::WindowProcessor::GetDefaultBackgroundColor()));
 	default:
 		return sStampWindowController->HandleMessage(hWnd, message, wParam, lParam);
 	}
@@ -29,7 +30,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	wndClassEx.hInstance = hInstance;
 	wndClassEx.hIcon = NULL;
 	wndClassEx.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wndClassEx.hbrBackground = CreateSolidBrush(Stamp::StampWindowController::GetDefaultBackgroundColor());
+	wndClassEx.hbrBackground = CreateSolidBrush(Stamp::WindowProcessor::GetDefaultBackgroundColor());
 	wndClassEx.lpszMenuName = NULL;
 	wndClassEx.lpszClassName = spWndClassName;
 	wndClassEx.hIconSm = NULL;
