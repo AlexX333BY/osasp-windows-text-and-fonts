@@ -248,6 +248,12 @@ namespace Stamp
 			- m_sStampIndent.m_cbRight) / 100);
 		m_sStampSize.cy = (SHORT)(sWndSize.cy * (100 - m_sStampIndent.m_cbBottom
 			- m_sStampIndent.m_cbTop) / 100);
+
+		LONG lMaxFontHeight = GetMaxFontHeight();
+		if (lMaxFontHeight < m_lFontHeight)
+		{
+			SetFontHeight(lMaxFontHeight);
+		}
 	}
 
 	BOOL StampDrawer::IsBetween(INT64 iValue, INT64 iLeftBound, INT64 iRightBound)
