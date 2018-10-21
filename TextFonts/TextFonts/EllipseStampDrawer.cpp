@@ -1,4 +1,6 @@
 #include "EllipseStampDrawer.h"
+#include "BitmapProcessor.h"
+#include "DeviceContextProcessor.h"
 #include "FontProcessor.h"
 #include "StringProcessor.h"
 #include "WindowProcessor.h"
@@ -13,11 +15,12 @@ namespace Stamp
 	BOOL EllipseStampDrawer::Draw()
 	{
 		WindowProcessor::FillWindowWithColor(m_hWnd, m_crImageBackgroundColor);
-		int iTextLength = GetTextLength();
+		BOOL bResult = DrawBackgroundImage();
 
+		int iTextLength = GetTextLength();
 		if (iTextLength == 0)
 		{
-			return TRUE;
+			return bResult;
 		}
 
 		LONG lSymbolWidth = (LONG)(M_PI * (m_sStampSize.cx + m_sStampSize.cy) / 2 / iTextLength);
@@ -43,7 +46,51 @@ namespace Stamp
 			}
 		}
 
-		return iTotalDrawedSymbols == iTextLength;
+		return bResult && (iTotalDrawedSymbols == iTextLength);
+	}
+
+	BOOL EllipseStampDrawer::DrawBackgroundImage()
+	{
+		if (m_hBackgroundImage == NULL)
+		{
+			return FALSE;
+		}
+
+		HDC hWndDC = GetDC(m_hWnd);
+
+		HDC hImageDC = CreateCompatibleDC(hWndDC);
+		SIZE sDcSize = BitmapProcessor::GetBitmapSize(m_hBackgroundImage);
+		HGDIOBJ hOldImageObject = SelectObject(hImageDC, m_hBackgroundImage);
+
+		HDC hMaskDC = CreateCompatibleDC(hWndDC);
+		HBITMAP hMaskBitmap = CreateCompatibleBitmap(hMaskDC, sDcSize.cx, sDcSize.cy);
+		HGDIOBJ hOldMaskObject = SelectObject(hMaskDC, hMaskBitmap);
+
+		RECT rDcRect;
+		rDcRect.bottom = sDcSize.cy;
+		rDcRect.left = 0;
+		rDcRect.right = sDcSize.cx;
+		rDcRect.top = 0;
+
+		DeviceContextProcessor::FillRectangle(hMaskDC, RGB(0x00, 0x00, 0x00), rDcRect);
+		DeviceContextProcessor::FillEllipse(hMaskDC, RGB(0xFF, 0xFF, 0xFF), rDcRect);
+
+		BOOL bResult = BitBlt(hImageDC, 0, 0, sDcSize.cx, sDcSize.cy, hMaskDC, 0, 0, SRCAND);
+
+		DeviceContextProcessor::FillRectangle(hMaskDC, m_crImageBackgroundColor, rDcRect);
+		DeviceContextProcessor::FillEllipse(hMaskDC, RGB(0x00, 0x00, 0x00), rDcRect);
+
+		bResult &= BitBlt(hImageDC, 0, 0, sDcSize.cx, sDcSize.cy, hMaskDC, 0, 0, SRCPAINT);
+
+		bResult &= StretchBlt(hWndDC, m_cStampCoordinates.X, m_cStampCoordinates.Y, m_sStampSize.cx, m_sStampSize.cy, hImageDC, 0, 0, sDcSize.cx, sDcSize.cy, SRCCOPY);
+		
+		SelectObject(hImageDC, hOldImageObject);
+		SelectObject(hMaskDC, hOldMaskObject);
+		DeleteObject(hMaskBitmap);
+		DeleteDC(hMaskDC);
+		DeleteDC(hImageDC);
+		ReleaseDC(m_hWnd, hWndDC);
+		return bResult;
 	}
 
 	COORD EllipseStampDrawer::GetSymbolCenterCoordinates(DOUBLE dAngle)

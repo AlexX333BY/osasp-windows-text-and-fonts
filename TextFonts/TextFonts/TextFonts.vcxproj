@@ -119,6 +119,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BitmapProcessor.cpp" />
+    <ClCompile Include="DeviceContextProcessor.cpp" />
+    <ClCompile Include="EllipseStampDrawer.cpp" />
     <ClCompile Include="FontProcessor.cpp" />
     <ClCompile Include="RectangleStampDrawer.cpp" />
     <ClCompile Include="StampDrawer.cpp" />
@@ -131,6 +133,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BitmapProcessor.h" />
+    <ClInclude Include="DeviceContextProcessor.h" />
+    <ClInclude Include="EllipseStampDrawer.h" />
     <ClInclude Include="FontProcessor.h" />
     <ClInclude Include="RectangleStampDrawer.h" />
     <ClInclude Include="StampDrawer.h" />

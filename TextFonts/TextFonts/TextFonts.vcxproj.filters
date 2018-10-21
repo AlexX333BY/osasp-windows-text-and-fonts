@@ -45,6 +45,12 @@
     <ClCompile Include="StampWindowController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="EllipseStampDrawer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DeviceContextProcessor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StampIndent.h">
@@ -72,6 +78,12 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="StampWindowController.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EllipseStampDrawer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DeviceContextProcessor.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
