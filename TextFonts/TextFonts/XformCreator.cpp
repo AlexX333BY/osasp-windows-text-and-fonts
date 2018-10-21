@@ -6,10 +6,10 @@
 
 namespace Stamp
 {
-	XFORM XformCreator::CreateRotationXform(WORD wDegreeAngle)
+	XFORM XformCreator::CreateRotationXform(DOUBLE dDegreeAngle)
 	{
 		XFORM xForm;
-		FLOAT fRadAngle = (FLOAT)(M_PI * wDegreeAngle / 180);
+		FLOAT fRadAngle = (FLOAT)(M_PI * dDegreeAngle / 180);
 		FLOAT fAngleSin = sin(fRadAngle);
 		FLOAT fAngleCos = cos(fRadAngle);
 		xForm.eM11 = fAngleCos;

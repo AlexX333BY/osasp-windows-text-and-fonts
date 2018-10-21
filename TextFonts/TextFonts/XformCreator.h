@@ -7,7 +7,7 @@ namespace Stamp
 	class XformCreator
 	{
 	public:
-		static XFORM CreateRotationXform(WORD wDegreeAngle);
+		static XFORM CreateRotationXform(DOUBLE dDegreeAngle);
 		static XFORM CreateMovementXform(COORD cCoord);
 	};
 }
