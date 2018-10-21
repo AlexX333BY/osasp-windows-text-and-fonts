@@ -15,7 +15,7 @@ namespace Stamp
 		{
 			bResult &= DrawBackgroundImage();
 		}
-		return bResult && DrawTextByRectangle();
+		return bResult && (DrawTextByRectangle() == GetTextLength());
 	}
 
 	BOOL RectangleStampDrawer::DrawBackgroundImage()
