@@ -7,13 +7,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	static Stamp::StampWindowController *sStampWindowController = new Stamp::StampWindowController();
 
-	switch (message)
+	if (message == WM_CREATE)
 	{
-	case WM_CREATE:
 		sStampWindowController->AddDrawer(new Stamp::RectangleStampDrawer(hWnd, Stamp::WindowProcessor::GetDefaultBackgroundColor()));
-	default:
-		return sStampWindowController->HandleMessage(hWnd, message, wParam, lParam);
 	}
+
+	return sStampWindowController->HandleMessage(hWnd, message, wParam, lParam);
 }
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, 
