@@ -4,22 +4,39 @@
 #include "EllipseStampDrawer.h"
 #include "WindowProcessor.h"
 
+COLORREF crBackgroundColor;
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	static Stamp::StampWindowController *sStampWindowController = new Stamp::StampWindowController();
 
 	if (message == WM_CREATE)
 	{
-		sStampWindowController->AddDrawer(new Stamp::RectangleStampDrawer(hWnd, Stamp::WindowProcessor::GetDefaultBackgroundColor()));
-		sStampWindowController->AddDrawer(new Stamp::EllipseStampDrawer(hWnd, Stamp::WindowProcessor::GetDefaultBackgroundColor()));
+		sStampWindowController->AddDrawer(new Stamp::RectangleStampDrawer(hWnd, crBackgroundColor));
+		sStampWindowController->AddDrawer(new Stamp::EllipseStampDrawer(hWnd, crBackgroundColor));
 	}
 
 	return sStampWindowController->HandleMessage(hWnd, message, wParam, lParam);
 }
 
+COLORREF GetUserColor()
+{
+	CHOOSECOLOR cColorWindowStruct;
+	COLORREF acrCustomColors[16] = { 0 };
+	cColorWindowStruct.lStructSize = sizeof(CHOOSECOLOR);
+	cColorWindowStruct.hwndOwner = NULL;
+	cColorWindowStruct.rgbResult = Stamp::WindowProcessor::GetDefaultBackgroundColor();
+	cColorWindowStruct.lpCustColors = acrCustomColors;
+	cColorWindowStruct.Flags = CC_RGBINIT | CC_SOLIDCOLOR;
+	ChooseColor(&cColorWindowStruct);
+	return cColorWindowStruct.rgbResult;
+}
+
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, 
 	LPTSTR lpCmdLine, int nCmdShow)
 {
+	crBackgroundColor = GetUserColor();
+
 	PCSTR spWndClassName = "LaboratoryWork2Class";
 
 	WNDCLASSEX wndClassEx;
@@ -31,7 +48,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	wndClassEx.hInstance = hInstance;
 	wndClassEx.hIcon = NULL;
 	wndClassEx.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wndClassEx.hbrBackground = CreateSolidBrush(Stamp::WindowProcessor::GetDefaultBackgroundColor());
+	wndClassEx.hbrBackground = CreateSolidBrush(crBackgroundColor);
 	wndClassEx.lpszMenuName = NULL;
 	wndClassEx.lpszClassName = spWndClassName;
 	wndClassEx.hIconSm = NULL;
