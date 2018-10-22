@@ -14,56 +14,80 @@ namespace Stamp
 {
 	BOOL EllipseStampDrawer::Draw()
 	{
-		WindowProcessor::FillWindowWithColor(m_hWnd, m_crImageBackgroundColor);
-		BOOL bResult = DrawBackgroundImage();
+		SIZE sWndSize = WindowProcessor::GetWindowSize(m_hWnd);
+		RECT rWndRect;
+		rWndRect.bottom = sWndSize.cy;
+		rWndRect.left = 0;
+		rWndRect.right = sWndSize.cx;
+		rWndRect.top = 0;
+
+		HDC hWndDC = GetDC(m_hWnd);
+		HDC hBufferDC = CreateCompatibleDC(hWndDC);
+		HBITMAP hBufferBitmap = CreateCompatibleBitmap(hWndDC, sWndSize.cx, sWndSize.cy);
+		HGDIOBJ hOldDrawObject = SelectObject(hBufferDC, hBufferBitmap);
+
+		DeviceContextProcessor::FillRectangle(hBufferDC, m_crImageBackgroundColor, rWndRect);
+		BOOL bResult = TRUE;
+
+		if (m_hBackgroundImage != NULL)
+		{
+			bResult &= DrawBackgroundImage(hBufferDC);
+		}
 
 		int iTextLength = GetTextLength();
-		if (iTextLength == 0)
+		if (iTextLength != 0)
 		{
-			return bResult;
-		}
-
-		LONG lSymbolWidth = (LONG)(M_PI * (m_sStampSize.cx + m_sStampSize.cy) / 2 / iTextLength);
-		DOUBLE dAngleStep = 360.0 / iTextLength;
-		DOUBLE dCurAngle = 90, dCurRotateAngle = 0;
-		COORD cSymbolCoord;
-		int iTotalDrawedSymbols = 0;
-		for (int iSymbol = 0; iSymbol < iTextLength; iSymbol++)
-		{
-			cSymbolCoord = GetSymbolCenterCoordinates(dCurAngle);
-			iTotalDrawedSymbols += (DrawSymbol(m_lpsText[iSymbol], cSymbolCoord, lSymbolWidth, dCurRotateAngle) ? 1 : 0);
-
-			dCurAngle -= dAngleStep;
-			if (dCurAngle < 0)
+			LONG lSymbolWidth = (LONG)(M_PI * (m_sStampSize.cx + m_sStampSize.cy) / 2 / iTextLength);
+			DOUBLE dAngleStep = 360.0 / iTextLength;
+			DOUBLE dCurAngle = 90, dCurRotateAngle = 0;
+			COORD cSymbolCoord;
+			int iTotalDrawedSymbols = 0;
+			for (int iSymbol = 0; iSymbol < iTextLength; iSymbol++)
 			{
-				dCurAngle += 360;
+				cSymbolCoord = GetSymbolCenterCoordinates(dCurAngle);
+				iTotalDrawedSymbols += (DrawSymbol(hBufferDC, m_lpsText[iSymbol], cSymbolCoord, lSymbolWidth, dCurRotateAngle) ? 1 : 0);
+
+				dCurAngle -= dAngleStep;
+				if (dCurAngle < 0)
+				{
+					dCurAngle += 360;
+				}
+
+				dCurRotateAngle += dAngleStep;
+				if (dCurRotateAngle < 0)
+				{
+					dCurRotateAngle += 360;
+				}
 			}
 
-			dCurRotateAngle += dAngleStep;
-			if (dCurRotateAngle < 0)
-			{
-				dCurRotateAngle += 360;
-			}
+			bResult &= (iTotalDrawedSymbols == iTextLength);
 		}
 
-		return bResult && (iTotalDrawedSymbols == iTextLength);
+		bResult &= BitBlt(hWndDC, 0, 0, sWndSize.cx, sWndSize.cy, hBufferDC, 0, 0, SRCCOPY);
+
+		SelectObject(hBufferDC, hOldDrawObject);
+		DeleteObject(hBufferBitmap);
+		DeleteDC(hBufferDC);
+		ReleaseDC(m_hWnd, hWndDC);
+
+		return bResult;
 	}
 
-	BOOL EllipseStampDrawer::DrawBackgroundImage()
+	BOOL EllipseStampDrawer::DrawBackgroundImage(HDC hDrawDC)
 	{
 		if (m_hBackgroundImage == NULL)
 		{
 			return FALSE;
 		}
 
-		HDC hWndDC = GetDC(m_hWnd);
+		HBITMAP hImageCopy = (HBITMAP)CopyImage(m_hBackgroundImage, IMAGE_BITMAP, 0, 0, 0);
 
-		HDC hImageDC = CreateCompatibleDC(hWndDC);
+		HDC hImageDC = CreateCompatibleDC(hDrawDC);
 		SIZE sDcSize = BitmapProcessor::GetBitmapSize(m_hBackgroundImage);
-		HGDIOBJ hOldImageObject = SelectObject(hImageDC, m_hBackgroundImage);
+		HGDIOBJ hOldImageObject = SelectObject(hImageDC, hImageCopy);
 
-		HDC hMaskDC = CreateCompatibleDC(hWndDC);
-		HBITMAP hMaskBitmap = CreateCompatibleBitmap(hMaskDC, sDcSize.cx, sDcSize.cy);
+		HDC hMaskDC = CreateCompatibleDC(hDrawDC);
+		HBITMAP hMaskBitmap = CreateCompatibleBitmap(hDrawDC, sDcSize.cx, sDcSize.cy);
 		HGDIOBJ hOldMaskObject = SelectObject(hMaskDC, hMaskBitmap);
 
 		RECT rDcRect;
@@ -82,14 +106,14 @@ namespace Stamp
 
 		bResult &= BitBlt(hImageDC, 0, 0, sDcSize.cx, sDcSize.cy, hMaskDC, 0, 0, SRCPAINT);
 
-		bResult &= StretchBlt(hWndDC, m_cStampCoordinates.X, m_cStampCoordinates.Y, m_sStampSize.cx, m_sStampSize.cy, hImageDC, 0, 0, sDcSize.cx, sDcSize.cy, SRCCOPY);
+		bResult &= StretchBlt(hDrawDC, m_cStampCoordinates.X, m_cStampCoordinates.Y, m_sStampSize.cx, m_sStampSize.cy, hImageDC, 0, 0, sDcSize.cx, sDcSize.cy, SRCCOPY);
 		
 		SelectObject(hImageDC, hOldImageObject);
 		SelectObject(hMaskDC, hOldMaskObject);
 		DeleteObject(hMaskBitmap);
+		DeleteObject(hImageCopy);
 		DeleteDC(hMaskDC);
 		DeleteDC(hImageDC);
-		ReleaseDC(m_hWnd, hWndDC);
 		return bResult;
 	}
 
@@ -106,10 +130,8 @@ namespace Stamp
 		return cSymbolCenterCoord;
 	}
 
-	BOOL EllipseStampDrawer::DrawSymbol(TCHAR cSymbol, COORD cCenterPoint, LONG lPlaceholderWidth, DOUBLE dAngle)
+	BOOL EllipseStampDrawer::DrawSymbol(HDC hDrawDC, TCHAR cSymbol, COORD cCenterPoint, LONG lPlaceholderWidth, DOUBLE dAngle)
 	{
-		HDC hWndDC = GetDC(m_hWnd);
-
 		RECT rTextRect;
 		rTextRect.top = cCenterPoint.Y - m_lFontHeight / 2;
 		rTextRect.bottom = cCenterPoint.Y + m_lFontHeight / 2;
@@ -117,36 +139,35 @@ namespace Stamp
 		rTextRect.right = cCenterPoint.X + lPlaceholderWidth / 2;
 
 		HFONT hFont = FontProcessor::CreateFontByHeight(m_hWnd, m_lFontHeight);
-		HGDIOBJ oldObject = SelectObject(hWndDC, hFont);
+		HGDIOBJ oldObject = SelectObject(hDrawDC, hFont);
 
 		XFORM xForm;
-		int iPrevGraphicsMode = SetGraphicsMode(hWndDC, GM_ADVANCED);
+		int iPrevGraphicsMode = SetGraphicsMode(hDrawDC, GM_ADVANCED);
 
 		cCenterPoint.X = -cCenterPoint.X;
 		cCenterPoint.Y = -cCenterPoint.Y;
 		xForm = XformCreator::CreateMovementXform(cCenterPoint);
-		SetWorldTransform(hWndDC, &xForm);
+		SetWorldTransform(hDrawDC, &xForm);
 
 		xForm = XformCreator::CreateRotationXform(dAngle);
-		ModifyWorldTransform(hWndDC, &xForm, MWT_RIGHTMULTIPLY);
+		ModifyWorldTransform(hDrawDC, &xForm, MWT_RIGHTMULTIPLY);
 
 		cCenterPoint.X = -cCenterPoint.X;
 		cCenterPoint.Y = -cCenterPoint.Y;
 		xForm = XformCreator::CreateMovementXform(cCenterPoint);
-		ModifyWorldTransform(hWndDC, &xForm, MWT_RIGHTMULTIPLY);
+		ModifyWorldTransform(hDrawDC, &xForm, MWT_RIGHTMULTIPLY);
 
-		int iOldBkMode = SetBkMode(hWndDC, TRANSPARENT);
+		int iOldBkMode = SetBkMode(hDrawDC, TRANSPARENT);
 		LPTSTR lpsTextToDisplay = StringProcessor::CreateStringByChar(cSymbol);
-		BOOL bResult = DrawText(hWndDC, lpsTextToDisplay, 1, &rTextRect, DT_CENTER | DT_SINGLELINE | DT_VCENTER);
+		BOOL bResult = DrawText(hDrawDC, lpsTextToDisplay, 1, &rTextRect, DT_CENTER | DT_SINGLELINE | DT_VCENTER);
 		free(lpsTextToDisplay);
-		SetBkMode(hWndDC, iOldBkMode);
+		SetBkMode(hDrawDC, iOldBkMode);
 
-		SelectObject(hWndDC, oldObject);
+		SelectObject(hDrawDC, oldObject);
 		DeleteObject(hFont);
 
-		ModifyWorldTransform(hWndDC, NULL, MWT_IDENTITY);
-		SetGraphicsMode(hWndDC, iPrevGraphicsMode);
-		ReleaseDC(m_hWnd, hWndDC);
+		ModifyWorldTransform(hDrawDC, NULL, MWT_IDENTITY);
+		SetGraphicsMode(hDrawDC, iPrevGraphicsMode);
 
 		return bResult;
 	}

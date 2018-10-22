@@ -37,5 +37,4 @@ namespace Stamp
 	{
 		return GetSysColor(COLOR_WINDOW);
 	}
-
 }

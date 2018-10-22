@@ -4,21 +4,44 @@
 #include "StringProcessor.h"
 #include "WindowProcessor.h"
 #include "XformCreator.h"
+#include "DeviceContextProcessor.h"
 
 namespace Stamp
 {
 	BOOL RectangleStampDrawer::Draw()
 	{
-		WindowProcessor::FillWindowWithColor(m_hWnd, m_crImageBackgroundColor);
+		SIZE sWndSize = WindowProcessor::GetWindowSize(m_hWnd);
+		RECT rWndRect;
+		rWndRect.bottom = sWndSize.cy;
+		rWndRect.left = 0;
+		rWndRect.right = sWndSize.cx;
+		rWndRect.top = 0;
+
+		HDC hWndDC = GetDC(m_hWnd);
+		HDC hBufferDC = CreateCompatibleDC(hWndDC);
+		HBITMAP hBufferBitmap = CreateCompatibleBitmap(hWndDC, sWndSize.cx, sWndSize.cy);
+		HGDIOBJ hOldDrawObject = SelectObject(hBufferDC, hBufferBitmap);
+
+		DeviceContextProcessor::FillRectangle(hBufferDC, m_crImageBackgroundColor, rWndRect);
 		BOOL bResult = TRUE;
+
 		if (m_hBackgroundImage != NULL)
 		{
-			bResult &= DrawBackgroundImage();
+			bResult &= DrawBackgroundImage(hBufferDC);
 		}
-		return bResult && (DrawTextByRectangle() == GetTextLength());
+		bResult &= (DrawTextByRectangle(hBufferDC) == GetTextLength());
+
+		bResult &= BitBlt(hWndDC, 0, 0, sWndSize.cx, sWndSize.cy, hBufferDC, 0, 0, SRCCOPY);
+
+		SelectObject(hBufferDC, hOldDrawObject);
+		DeleteObject(hBufferBitmap);
+		DeleteDC(hBufferDC);
+		ReleaseDC(m_hWnd, hWndDC);
+
+		return bResult;
 	}
 
-	BOOL RectangleStampDrawer::DrawBackgroundImage()
+	BOOL RectangleStampDrawer::DrawBackgroundImage(HDC hDrawDC)
 	{
 		if (m_hBackgroundImage == NULL)
 		{
@@ -26,19 +49,17 @@ namespace Stamp
 		}
 		
 		SIZE sBackgroundSize = BitmapProcessor::GetBitmapSize(m_hBackgroundImage);
-		HDC hWndDC = GetDC(m_hWnd);
-		HDC hBackgroundDC = CreateCompatibleDC(hWndDC);
+		HDC hBackgroundDC = CreateCompatibleDC(hDrawDC);
 		HGDIOBJ hOldObject = SelectObject(hBackgroundDC, m_hBackgroundImage);
 
-		BOOL bResult = StretchBlt(hWndDC, m_cStampCoordinates.X, m_cStampCoordinates.Y, m_sStampSize.cx, m_sStampSize.cy, hBackgroundDC, 0, 0, sBackgroundSize.cx, sBackgroundSize.cy, SRCCOPY);
+		BOOL bResult = StretchBlt(hDrawDC, m_cStampCoordinates.X, m_cStampCoordinates.Y, m_sStampSize.cx, m_sStampSize.cy, hBackgroundDC, 0, 0, sBackgroundSize.cx, sBackgroundSize.cy, SRCCOPY);
 
 		SelectObject(hBackgroundDC, hOldObject);
 		DeleteDC(hBackgroundDC);
-		ReleaseDC(m_hWnd, hWndDC);
 		return bResult;
 	}
 
-	int RectangleStampDrawer::DrawTextByRectangle()
+	int RectangleStampDrawer::DrawTextByRectangle(HDC hDrawDC)
 	{
 		int aiLettersOnSide[4];
 		GetSymbolsCountForRectangleSides(lstrlen(m_lpsText), aiLettersOnSide);
@@ -49,34 +70,34 @@ namespace Stamp
 		{
 			iFirstLetter = 0;
 			iLastLetter = aiLettersOnSide[0] - 1;
-			iResult += DrawTextByRectangleTopSide(iFirstLetter, iLastLetter);
+			iResult += DrawTextByRectangleTopSide(hDrawDC, iFirstLetter, iLastLetter);
 		}
 
 		if (aiLettersOnSide[1] > 0)
 		{
 			iFirstLetter = aiLettersOnSide[0];
 			iLastLetter = aiLettersOnSide[0] + aiLettersOnSide[1] - 1;
-			iResult += DrawTextByRectangleRightSide(iFirstLetter, iLastLetter);
+			iResult += DrawTextByRectangleRightSide(hDrawDC, iFirstLetter, iLastLetter);
 		}
 
 		if (aiLettersOnSide[2] > 0)
 		{
 			iFirstLetter = aiLettersOnSide[0] + aiLettersOnSide[1];
 			iLastLetter = aiLettersOnSide[0] + aiLettersOnSide[1] + aiLettersOnSide[2] - 1;
-			iResult += DrawTextByRectangleBottomSide(iFirstLetter, iLastLetter);
+			iResult += DrawTextByRectangleBottomSide(hDrawDC, iFirstLetter, iLastLetter);
 		}
 
 		if (aiLettersOnSide[3] > 0)
 		{
 			iFirstLetter = aiLettersOnSide[0] + aiLettersOnSide[1] + aiLettersOnSide[2];
 			iLastLetter = aiLettersOnSide[0] + aiLettersOnSide[1] + aiLettersOnSide[2] + aiLettersOnSide[3] - 1;
-			iResult += DrawTextByRectangleLeftSide(iFirstLetter, iLastLetter);
+			iResult += DrawTextByRectangleLeftSide(hDrawDC, iFirstLetter, iLastLetter);
 		}
 
 		return iResult;
 	}
 
-	int RectangleStampDrawer::DrawTextByRectangleTopSide(int iFirstChar, int iLastChar)
+	int RectangleStampDrawer::DrawTextByRectangleTopSide(HDC hDrawDC, int iFirstChar, int iLastChar)
 	{
 		LONG lLetterWidth = m_sStampSize.cx / (iLastChar - iFirstChar + 1);
 		COORD cCenterCoordinate;
@@ -86,14 +107,14 @@ namespace Stamp
 
 		for (int iLetterCounter = iFirstChar; iLetterCounter <= iLastChar; iLetterCounter++)
 		{
-			iResult += (DrawSymbol(m_lpsText[iLetterCounter], cCenterCoordinate, lLetterWidth, 0) ? 1 : 0);
+			iResult += (DrawSymbol(hDrawDC, m_lpsText[iLetterCounter], cCenterCoordinate, lLetterWidth, 0) ? 1 : 0);
 			cCenterCoordinate.X += (SHORT)lLetterWidth;
 		}
 
 		return iResult;
 	}
 
-	int RectangleStampDrawer::DrawTextByRectangleRightSide(int iFirstChar, int iLastChar)
+	int RectangleStampDrawer::DrawTextByRectangleRightSide(HDC hDrawDC, int iFirstChar, int iLastChar)
 	{
 		LONG lLetterWidth = m_sStampSize.cy / (iLastChar - iFirstChar + 1);
 		COORD cCenterCoordinate;
@@ -103,14 +124,14 @@ namespace Stamp
 
 		for (int iLetterCounter = iFirstChar; iLetterCounter <= iLastChar; iLetterCounter++)
 		{
-			iResult += (DrawSymbol(m_lpsText[iLetterCounter], cCenterCoordinate, lLetterWidth, 90) ? 1 : 0);
+			iResult += (DrawSymbol(hDrawDC, m_lpsText[iLetterCounter], cCenterCoordinate, lLetterWidth, 90) ? 1 : 0);
 			cCenterCoordinate.Y += (SHORT)lLetterWidth;
 		}
 
 		return iResult;
 	}
 
-	int RectangleStampDrawer::DrawTextByRectangleBottomSide(int iFirstChar, int iLastChar)
+	int RectangleStampDrawer::DrawTextByRectangleBottomSide(HDC hDrawDC, int iFirstChar, int iLastChar)
 	{
 		LONG lLetterWidth = m_sStampSize.cx / (iLastChar - iFirstChar + 1);
 		COORD cCenterCoordinate;
@@ -120,14 +141,14 @@ namespace Stamp
 
 		for (int iLetterCounter = iFirstChar; iLetterCounter <= iLastChar; iLetterCounter++)
 		{
-			iResult += (DrawSymbol(m_lpsText[iLetterCounter], cCenterCoordinate, lLetterWidth, 180) ? 1 : 0);
+			iResult += (DrawSymbol(hDrawDC, m_lpsText[iLetterCounter], cCenterCoordinate, lLetterWidth, 180) ? 1 : 0);
 			cCenterCoordinate.X -= (SHORT)lLetterWidth;
 		}
 
 		return iResult;
 	}
 
-	int RectangleStampDrawer::DrawTextByRectangleLeftSide(int iFirstChar, int iLastChar)
+	int RectangleStampDrawer::DrawTextByRectangleLeftSide(HDC hDrawDC, int iFirstChar, int iLastChar)
 	{
 		LONG lLetterWidth = m_sStampSize.cy / (iLastChar - iFirstChar + 1);
 		COORD cCenterCoordinate;
@@ -137,17 +158,15 @@ namespace Stamp
 
 		for (int iLetterCounter = iFirstChar; iLetterCounter <= iLastChar; iLetterCounter++)
 		{
-			iResult += (DrawSymbol(m_lpsText[iLetterCounter], cCenterCoordinate, lLetterWidth, 270) ? 1 : 0);
+			iResult += (DrawSymbol(hDrawDC, m_lpsText[iLetterCounter], cCenterCoordinate, lLetterWidth, 270) ? 1 : 0);
 			cCenterCoordinate.Y -= (SHORT)lLetterWidth;
 		}
 
 		return iResult;
 	}
 
-	BOOL RectangleStampDrawer::DrawSymbol(TCHAR cSymbol, COORD cCenterPoint, LONG lPlaceholderWidth, WORD wAngle)
+	BOOL RectangleStampDrawer::DrawSymbol(HDC hDrawDC, TCHAR cSymbol, COORD cCenterPoint, LONG lPlaceholderWidth, WORD wAngle)
 	{
-		HDC hWndDC = GetDC(m_hWnd);
-
 		RECT rTextRect;
 		rTextRect.top = cCenterPoint.Y - m_lFontHeight / 2;
 		rTextRect.bottom = cCenterPoint.Y + m_lFontHeight / 2;
@@ -155,36 +174,35 @@ namespace Stamp
 		rTextRect.right = cCenterPoint.X + lPlaceholderWidth / 2;
 
 		HFONT hFont = FontProcessor::CreateFontByHeight(m_hWnd, m_lFontHeight);
-		HGDIOBJ oldObject = SelectObject(hWndDC, hFont);
+		HGDIOBJ oldObject = SelectObject(hDrawDC, hFont);
 
 		XFORM xForm;
-		int iPrevGraphicsMode = SetGraphicsMode(hWndDC, GM_ADVANCED);
+		int iPrevGraphicsMode = SetGraphicsMode(hDrawDC, GM_ADVANCED);
 
 		cCenterPoint.X = -cCenterPoint.X;
 		cCenterPoint.Y = -cCenterPoint.Y;
 		xForm = XformCreator::CreateMovementXform(cCenterPoint);
-		SetWorldTransform(hWndDC, &xForm);
+		SetWorldTransform(hDrawDC, &xForm);
 
 		xForm = XformCreator::CreateRotationXform(wAngle);
-		ModifyWorldTransform(hWndDC, &xForm, MWT_RIGHTMULTIPLY);
+		ModifyWorldTransform(hDrawDC, &xForm, MWT_RIGHTMULTIPLY);
 
 		cCenterPoint.X = -cCenterPoint.X;
 		cCenterPoint.Y = -cCenterPoint.Y;
 		xForm = XformCreator::CreateMovementXform(cCenterPoint);
-		ModifyWorldTransform(hWndDC, &xForm, MWT_RIGHTMULTIPLY);
+		ModifyWorldTransform(hDrawDC, &xForm, MWT_RIGHTMULTIPLY);
 
-		int iOldBkMode = SetBkMode(hWndDC, TRANSPARENT);
+		int iOldBkMode = SetBkMode(hDrawDC, TRANSPARENT);
 		LPTSTR lpsTextToDisplay = StringProcessor::CreateStringByChar(cSymbol);
-		BOOL bResult = DrawText(hWndDC, lpsTextToDisplay, 1, &rTextRect, DT_CENTER | DT_SINGLELINE | DT_VCENTER);
+		BOOL bResult = DrawText(hDrawDC, lpsTextToDisplay, 1, &rTextRect, DT_CENTER | DT_SINGLELINE | DT_VCENTER);
 		free(lpsTextToDisplay);
-		SetBkMode(hWndDC, iOldBkMode);
+		SetBkMode(hDrawDC, iOldBkMode);
 
-		SelectObject(hWndDC, oldObject);
+		SelectObject(hDrawDC, oldObject);
 		DeleteObject(hFont);
 
-		ModifyWorldTransform(hWndDC, NULL, MWT_IDENTITY);
-		SetGraphicsMode(hWndDC, iPrevGraphicsMode);
-		ReleaseDC(m_hWnd, hWndDC);
+		ModifyWorldTransform(hDrawDC, NULL, MWT_IDENTITY);
+		SetGraphicsMode(hDrawDC, iPrevGraphicsMode);
 
 		return bResult;
 	}

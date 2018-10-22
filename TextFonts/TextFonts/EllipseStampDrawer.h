@@ -11,8 +11,8 @@ namespace Stamp
 		virtual BOOL Draw();
 		EllipseStampDrawer(HWND hWnd, COLORREF crImageBackgroundColor);
 	private:
-		BOOL DrawBackgroundImage();
+		BOOL DrawBackgroundImage(HDC hDrawDC);
 		COORD GetSymbolCenterCoordinates(DOUBLE dAngle);
-		BOOL DrawSymbol(TCHAR cSymbol, COORD cCenterPoint, LONG lPlaceholderWidth, DOUBLE dAngle);
+		BOOL DrawSymbol(HDC hDrawDC, TCHAR cSymbol, COORD cCenterPoint, LONG lPlaceholderWidth, DOUBLE dAngle);
 	};
 }

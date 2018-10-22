@@ -10,14 +10,14 @@ namespace Stamp
 		virtual BOOL Draw();
 		RectangleStampDrawer(HWND hWnd, COLORREF crImageBackgroundColor);
 	private:
-		BOOL DrawBackgroundImage();
+		BOOL DrawBackgroundImage(HDC hDrawDC);
 
-		int DrawTextByRectangle();
-		int DrawTextByRectangleTopSide(int iFirstChar, int iLastChar);
-		int DrawTextByRectangleRightSide(int iFirstChar, int iLastChar);
-		int DrawTextByRectangleBottomSide(int iFirstChar, int iLastChar);
-		int DrawTextByRectangleLeftSide(int iFirstChar, int iLastChar);
-		BOOL DrawSymbol(TCHAR cSymbol, COORD cCenterPoint, LONG lPlaceholderWidth, WORD wAngle);
+		int DrawTextByRectangle(HDC hDrawDC);
+		int DrawTextByRectangleTopSide(HDC hDrawDC, int iFirstChar, int iLastChar);
+		int DrawTextByRectangleRightSide(HDC hDrawDC, int iFirstChar, int iLastChar);
+		int DrawTextByRectangleBottomSide(HDC hDrawDC, int iFirstChar, int iLastChar);
+		int DrawTextByRectangleLeftSide(HDC hDrawDC, int iFirstChar, int iLastChar);
+		BOOL DrawSymbol(HDC hDrawDC, TCHAR cSymbol, COORD cCenterPoint, LONG lPlaceholderWidth, WORD wAngle);
 
 		void GetSymbolsCountForRectangleSides(int iTextLength, int aiLettersCount[]);
 	};
