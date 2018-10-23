@@ -26,6 +26,7 @@ namespace Stamp
 		BOOL PostDrawStampMessage(HWND hWnd);
 		BOOL PostSizeMessage(HWND hWnd);
 		LoadResult LoadStampBackground(HWND hWnd);
+		BOOL GetUserColor(HWND hWnd, COLORREF &crChosenColor);
 		static const UINT WM_DRAW_STAMP;
 		StampDrawer **m_asStampDrawers;
 		size_t m_uDrawersCount;

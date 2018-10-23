@@ -1,5 +1,6 @@
 #include "StampWindowController.h"
 #include "RectangleStampDrawer.h"
+#include "WindowProcessor.h"
 
 namespace Stamp
 {
@@ -55,6 +56,14 @@ namespace Stamp
 			case VK_F4:
 				NextDrawer();
 				PostDrawStampMessage(hWnd);
+				break;
+			case VK_F5:
+				COLORREF crNewColor;
+				if (GetUserColor(hWnd, crNewColor))
+				{
+					m_asStampDrawers[m_uCurDrawer]->SetImageBackgroundColor(crNewColor);
+					PostDrawStampMessage(hWnd);
+				}
 				break;
 			}
 			break;
@@ -187,6 +196,26 @@ namespace Stamp
 			}
 		}
 		return LR_CANCELLED_BY_USER;
+	}
+
+	BOOL StampWindowController::GetUserColor(HWND hWnd, COLORREF &crChosenColor)
+	{
+		CHOOSECOLOR cColorWindowStruct;
+		COLORREF acrCustomColors[16] = { 0 };
+		cColorWindowStruct.lStructSize = sizeof(CHOOSECOLOR);
+		cColorWindowStruct.hwndOwner = hWnd;
+		cColorWindowStruct.rgbResult = Stamp::WindowProcessor::GetDefaultBackgroundColor();
+		cColorWindowStruct.lpCustColors = acrCustomColors;
+		cColorWindowStruct.Flags = CC_RGBINIT | CC_SOLIDCOLOR;
+		if (ChooseColor(&cColorWindowStruct))
+		{
+			crChosenColor = cColorWindowStruct.rgbResult;
+			return TRUE;
+		}
+		else
+		{
+			return FALSE;
+		}
 	}
 
 	BOOL StampWindowController::PostDrawStampMessage(HWND hWnd)

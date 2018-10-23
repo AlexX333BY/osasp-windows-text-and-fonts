@@ -217,6 +217,8 @@ namespace Stamp
 			m_hBackgroundImage = (HBITMAP)CopyImage(sStampDrawer->m_hBackgroundImage, IMAGE_BITMAP, 0, 0, 0);
 			bResult &= (m_hBackgroundImage == NULL);
 		}
+
+		m_crImageBackgroundColor = sStampDrawer->GetImageBackgroundColor();
 		
 		LPTSTR lpsText = sStampDrawer->GetText();
 		if (lpsText == NULL)
