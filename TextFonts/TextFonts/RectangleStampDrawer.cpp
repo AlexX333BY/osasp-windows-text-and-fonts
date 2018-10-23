@@ -99,16 +99,18 @@ namespace Stamp
 
 	int RectangleStampDrawer::DrawTextByRectangleTopSide(HDC hDrawDC, int iFirstChar, int iLastChar)
 	{
-		LONG lLetterWidth = m_sStampSize.cx / (iLastChar - iFirstChar + 1);
+		DOUBLE lLetterWidth = m_sStampSize.cx / (iLastChar - iFirstChar + 1.0);
+		DOUBLE dCurXCoordinate = m_cStampCoordinates.X + lLetterWidth / 2;
 		COORD cCenterCoordinate;
-		cCenterCoordinate.X = (SHORT)(m_cStampCoordinates.X + lLetterWidth / 2);
+		cCenterCoordinate.X = (SHORT)dCurXCoordinate;
 		cCenterCoordinate.Y = (SHORT)(m_cStampCoordinates.Y - m_lFontHeight / 2);
 		int iResult = 0;
 
 		for (int iLetterCounter = iFirstChar; iLetterCounter <= iLastChar; iLetterCounter++)
 		{
-			iResult += (DrawSymbol(hDrawDC, m_lpsText[iLetterCounter], cCenterCoordinate, lLetterWidth, 0) ? 1 : 0);
-			cCenterCoordinate.X += (SHORT)lLetterWidth;
+			iResult += (DrawSymbol(hDrawDC, m_lpsText[iLetterCounter], cCenterCoordinate, (LONG)lLetterWidth, 0) ? 1 : 0);
+			dCurXCoordinate += lLetterWidth;
+			cCenterCoordinate.X = (SHORT)dCurXCoordinate;
 		}
 
 		return iResult;
@@ -116,16 +118,18 @@ namespace Stamp
 
 	int RectangleStampDrawer::DrawTextByRectangleRightSide(HDC hDrawDC, int iFirstChar, int iLastChar)
 	{
-		LONG lLetterWidth = m_sStampSize.cy / (iLastChar - iFirstChar + 1);
+		DOUBLE lLetterWidth = m_sStampSize.cy / (iLastChar - iFirstChar + 1.0);
+		DOUBLE dCurYCoordinate = m_cStampCoordinates.Y + lLetterWidth / 2;
 		COORD cCenterCoordinate;
 		cCenterCoordinate.X = (SHORT)(m_cStampCoordinates.X + m_sStampSize.cx + m_lFontHeight / 2);
-		cCenterCoordinate.Y = (SHORT)(m_cStampCoordinates.Y + lLetterWidth / 2);
+		cCenterCoordinate.Y = (SHORT)dCurYCoordinate;
 		int iResult = 0;
 
 		for (int iLetterCounter = iFirstChar; iLetterCounter <= iLastChar; iLetterCounter++)
 		{
-			iResult += (DrawSymbol(hDrawDC, m_lpsText[iLetterCounter], cCenterCoordinate, lLetterWidth, 90) ? 1 : 0);
-			cCenterCoordinate.Y += (SHORT)lLetterWidth;
+			iResult += (DrawSymbol(hDrawDC, m_lpsText[iLetterCounter], cCenterCoordinate, (LONG)lLetterWidth, 90) ? 1 : 0);
+			dCurYCoordinate += lLetterWidth;
+			cCenterCoordinate.Y = (SHORT)dCurYCoordinate;
 		}
 
 		return iResult;
@@ -133,16 +137,18 @@ namespace Stamp
 
 	int RectangleStampDrawer::DrawTextByRectangleBottomSide(HDC hDrawDC, int iFirstChar, int iLastChar)
 	{
-		LONG lLetterWidth = m_sStampSize.cx / (iLastChar - iFirstChar + 1);
+		DOUBLE lLetterWidth = m_sStampSize.cx / (iLastChar - iFirstChar + 1.0);
+		DOUBLE dCurXCoordinate = m_cStampCoordinates.X + m_sStampSize.cx - lLetterWidth / 2;
 		COORD cCenterCoordinate;
-		cCenterCoordinate.X = (SHORT)(m_cStampCoordinates.X + m_sStampSize.cx - lLetterWidth / 2);
+		cCenterCoordinate.X = (SHORT)dCurXCoordinate;
 		cCenterCoordinate.Y = (SHORT)(m_cStampCoordinates.Y + m_sStampSize.cy + m_lFontHeight / 2);
 		int iResult = 0;
 
 		for (int iLetterCounter = iFirstChar; iLetterCounter <= iLastChar; iLetterCounter++)
 		{
-			iResult += (DrawSymbol(hDrawDC, m_lpsText[iLetterCounter], cCenterCoordinate, lLetterWidth, 180) ? 1 : 0);
-			cCenterCoordinate.X -= (SHORT)lLetterWidth;
+			iResult += (DrawSymbol(hDrawDC, m_lpsText[iLetterCounter], cCenterCoordinate, (LONG)lLetterWidth, 180) ? 1 : 0);
+			dCurXCoordinate -= lLetterWidth;
+			cCenterCoordinate.X = (SHORT)dCurXCoordinate;
 		}
 
 		return iResult;
@@ -150,16 +156,18 @@ namespace Stamp
 
 	int RectangleStampDrawer::DrawTextByRectangleLeftSide(HDC hDrawDC, int iFirstChar, int iLastChar)
 	{
-		LONG lLetterWidth = m_sStampSize.cy / (iLastChar - iFirstChar + 1);
+		DOUBLE lLetterWidth = m_sStampSize.cy / (iLastChar - iFirstChar + 1.0);
+		DOUBLE dCurYCoordinate = m_cStampCoordinates.Y + m_sStampSize.cy - lLetterWidth / 2;
 		COORD cCenterCoordinate;
 		cCenterCoordinate.X = (SHORT)(m_cStampCoordinates.X - m_lFontHeight / 2);
-		cCenterCoordinate.Y = (SHORT)(m_cStampCoordinates.Y + m_sStampSize.cy - lLetterWidth / 2);
+		cCenterCoordinate.Y = (SHORT)dCurYCoordinate;
 		int iResult = 0;
 
 		for (int iLetterCounter = iFirstChar; iLetterCounter <= iLastChar; iLetterCounter++)
 		{
-			iResult += (DrawSymbol(hDrawDC, m_lpsText[iLetterCounter], cCenterCoordinate, lLetterWidth, 270) ? 1 : 0);
-			cCenterCoordinate.Y -= (SHORT)lLetterWidth;
+			iResult += (DrawSymbol(hDrawDC, m_lpsText[iLetterCounter], cCenterCoordinate, (LONG)lLetterWidth, 270) ? 1 : 0);
+			dCurYCoordinate -= lLetterWidth;
+			cCenterCoordinate.Y = (SHORT)dCurYCoordinate;
 		}
 
 		return iResult;
