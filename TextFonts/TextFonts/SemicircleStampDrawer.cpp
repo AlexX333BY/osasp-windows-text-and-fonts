@@ -108,17 +108,17 @@ namespace Stamp
 		int iTextLength = lstrlen(m_lpsText);
 		DOUBLE lPlaceholderWidth = (DOUBLE)m_sStampSize.cx / (iTextLength - iStartSymbol);
 
-		DOUBLE curXCoordinate = m_cStampCoordinates.X + m_sStampSize.cx - lPlaceholderWidth / 2;
+		DOUBLE dCurXCoordinate = m_cStampCoordinates.X + m_sStampSize.cx - lPlaceholderWidth / 2;
 		COORD cSymbolCenterCoordinate;
-		cSymbolCenterCoordinate.X = (SHORT)curXCoordinate;
+		cSymbolCenterCoordinate.X = (SHORT)dCurXCoordinate;
 		cSymbolCenterCoordinate.Y = (SHORT)(m_cStampCoordinates.Y + m_sStampSize.cy + m_lFontHeight / 2);
 
 		int iResult = 0;
 		for (int iSymbolCounter = iStartSymbol; iSymbolCounter < iTextLength; iSymbolCounter++)
 		{
 			iResult += (DrawSymbol(hDrawDC, m_lpsText[iSymbolCounter], cSymbolCenterCoordinate, (LONG)lPlaceholderWidth, 180) ? 1 : 0);
-			curXCoordinate -= lPlaceholderWidth;
-			cSymbolCenterCoordinate.X = (SHORT)curXCoordinate;
+			dCurXCoordinate -= lPlaceholderWidth;
+			cSymbolCenterCoordinate.X = (SHORT)dCurXCoordinate;
 		}
 
 		return iResult;
