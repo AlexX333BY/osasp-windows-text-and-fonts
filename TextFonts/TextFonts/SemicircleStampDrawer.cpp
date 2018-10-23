@@ -4,6 +4,7 @@
 #include "StringProcessor.h"
 #include "WindowProcessor.h"
 #include "DeviceContextProcessor.h"
+#include "BitmapProcessor.h"
 
 #define _USE_MATH_DEFINES 
 
@@ -27,10 +28,15 @@ namespace Stamp
 
 		DeviceContextProcessor::FillRectangle(hBufferDC, m_crImageBackgroundColor, rWndRect);
 
+		BOOL bResult = TRUE;
+		if (m_hBackgroundImage != NULL)
+		{
+			bResult = DrawBackgroundImage(hBufferDC);
+		}
+
 		int iBottomSymbolsCount = GetBottomSymbolsCount();
 		int iArcSymbolsCount = lstrlen(m_lpsText) - iBottomSymbolsCount;
-
-		BOOL bResult = TRUE;
+		
 		if (iBottomSymbolsCount != 0)
 		{
 			bResult &= (DrawBottomSymbols(hBufferDC, iArcSymbolsCount) == iBottomSymbolsCount);
@@ -52,7 +58,49 @@ namespace Stamp
 
 	BOOL SemicircleStampDrawer::DrawBackgroundImage(HDC hDrawDC)
 	{
-		return TRUE;
+		if (m_hBackgroundImage == NULL)
+		{
+			return FALSE;
+		}
+
+		HBITMAP hImageCopy = (HBITMAP)CopyImage(m_hBackgroundImage, IMAGE_BITMAP, 0, 0, 0);
+
+		HDC hImageDC = CreateCompatibleDC(hDrawDC);
+		SIZE sDcSize = BitmapProcessor::GetBitmapSize(m_hBackgroundImage);
+		HGDIOBJ hOldImageObject = SelectObject(hImageDC, hImageCopy);
+
+		HDC hMaskDC = CreateCompatibleDC(hDrawDC);
+		HBITMAP hMaskBitmap = CreateCompatibleBitmap(hDrawDC, sDcSize.cx, sDcSize.cy);
+		HGDIOBJ hOldMaskObject = SelectObject(hMaskDC, hMaskBitmap);
+
+		RECT rDcRect;
+		rDcRect.bottom = sDcSize.cy;
+		rDcRect.left = 0;
+		rDcRect.right = sDcSize.cx;
+		rDcRect.top = 0;
+		RECT rEllipseRect = rDcRect;
+		rEllipseRect.bottom = sDcSize.cy * 2;
+
+		DeviceContextProcessor::FillRectangle(hMaskDC, RGB(0x00, 0x00, 0x00), rDcRect);
+		DeviceContextProcessor::FillEllipse(hMaskDC, RGB(0xFF, 0xFF, 0xFF), rEllipseRect);
+
+		BOOL bResult = BitBlt(hImageDC, 0, 0, sDcSize.cx, sDcSize.cy, hMaskDC, 0, 0, SRCAND);
+
+		DeviceContextProcessor::FillRectangle(hMaskDC, m_crImageBackgroundColor, rDcRect);
+		DeviceContextProcessor::FillEllipse(hMaskDC, RGB(0x00, 0x00, 0x00), rEllipseRect);
+
+		bResult &= BitBlt(hImageDC, 0, 0, sDcSize.cx, sDcSize.cy, hMaskDC, 0, 0, SRCPAINT);
+
+		bResult &= StretchBlt(hDrawDC, m_cStampCoordinates.X, m_cStampCoordinates.Y, m_sStampSize.cx, m_sStampSize.cy, hImageDC, 0, 0, sDcSize.cx, sDcSize.cy, SRCCOPY);
+
+		SelectObject(hImageDC, hOldImageObject);
+		SelectObject(hMaskDC, hOldMaskObject);
+		DeleteObject(hMaskBitmap);
+		DeleteObject(hImageCopy);
+		DeleteDC(hMaskDC);
+		DeleteDC(hImageDC);
+
+		return bResult;
 	}
 
 	int SemicircleStampDrawer::DrawBottomSymbols(HDC hDrawDC, int iStartSymbol)
@@ -62,15 +110,15 @@ namespace Stamp
 
 		DOUBLE curXCoordinate = m_cStampCoordinates.X + m_sStampSize.cx - lPlaceholderWidth / 2;
 		COORD cSymbolCenterCoordinate;
-		cSymbolCenterCoordinate.X = curXCoordinate;
-		cSymbolCenterCoordinate.Y = m_cStampCoordinates.Y + m_sStampSize.cy + m_lFontHeight / 2;
+		cSymbolCenterCoordinate.X = (SHORT)curXCoordinate;
+		cSymbolCenterCoordinate.Y = (SHORT)(m_cStampCoordinates.Y + m_sStampSize.cy + m_lFontHeight / 2);
 
 		int iResult = 0;
 		for (int iSymbolCounter = iStartSymbol; iSymbolCounter < iTextLength; iSymbolCounter++)
 		{
-			iResult += (DrawSymbol(hDrawDC, m_lpsText[iSymbolCounter], cSymbolCenterCoordinate, lPlaceholderWidth, 180) ? 1 : 0);
+			iResult += (DrawSymbol(hDrawDC, m_lpsText[iSymbolCounter], cSymbolCenterCoordinate, (LONG)lPlaceholderWidth, 180) ? 1 : 0);
 			curXCoordinate -= lPlaceholderWidth;
-			cSymbolCenterCoordinate.X = curXCoordinate;
+			cSymbolCenterCoordinate.X = (SHORT)curXCoordinate;
 		}
 
 		return iResult;
@@ -80,7 +128,7 @@ namespace Stamp
 	{
 		DOUBLE dAngleStep = 180.0 / (iArcSymbolsCount + 1);
 		DOUBLE dCurAngle = 180 - dAngleStep;
-		LONG lPlaceholderWidth = M_PI * (m_sStampSize.cx + m_sStampSize.cy) / 4 / iArcSymbolsCount;
+		LONG lPlaceholderWidth = (LONG)(M_PI * (m_sStampSize.cx + m_sStampSize.cy) / 4 / iArcSymbolsCount);
 
 		int iResult = 0;
 		for (int iSymbolCounter = 0; iSymbolCounter < iArcSymbolsCount; iSymbolCounter++)
@@ -94,7 +142,7 @@ namespace Stamp
 
 	int SemicircleStampDrawer::GetBottomSymbolsCount()
 	{
-		return lstrlen(m_lpsText) * m_sStampSize.cx / (M_PI * (m_sStampSize.cx + m_sStampSize.cy) / 4 + m_sStampSize.cx);
+		return (int)(lstrlen(m_lpsText) * m_sStampSize.cx / (M_PI * (m_sStampSize.cx + m_sStampSize.cy) / 4 + m_sStampSize.cx));
 	}
 
 	COORD SemicircleStampDrawer::GetArcSymbolCenterCoordinates(DOUBLE dAngle)
