@@ -123,6 +123,7 @@
     <ClCompile Include="EllipseStampDrawer.cpp" />
     <ClCompile Include="FontProcessor.cpp" />
     <ClCompile Include="RectangleStampDrawer.cpp" />
+    <ClCompile Include="SemicircleStampDrawer.cpp" />
     <ClCompile Include="StampDrawer.cpp" />
     <ClCompile Include="StampIndent.cpp" />
     <ClCompile Include="StampWindowController.cpp" />
@@ -137,6 +138,7 @@
     <ClInclude Include="EllipseStampDrawer.h" />
     <ClInclude Include="FontProcessor.h" />
     <ClInclude Include="RectangleStampDrawer.h" />
+    <ClInclude Include="SemicircleStampDrawer.h" />
     <ClInclude Include="StampDrawer.h" />
     <ClInclude Include="StampIndent.h" />
     <ClInclude Include="StampWindowController.h" />

@@ -2,6 +2,7 @@
 #include "StampWindowController.h"
 #include "RectangleStampDrawer.h"
 #include "EllipseStampDrawer.h"
+#include "SemicircleStampDrawer.h"
 #include "WindowProcessor.h"
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -12,6 +13,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 		sStampWindowController->AddDrawer(new Stamp::RectangleStampDrawer(hWnd, Stamp::WindowProcessor::GetDefaultBackgroundColor()));
 		sStampWindowController->AddDrawer(new Stamp::EllipseStampDrawer(hWnd, Stamp::WindowProcessor::GetDefaultBackgroundColor()));
+		sStampWindowController->AddDrawer(new Stamp::SemicircleStampDrawer(hWnd, Stamp::WindowProcessor::GetDefaultBackgroundColor()));
 	}
 
 	return sStampWindowController->HandleMessage(hWnd, message, wParam, lParam);

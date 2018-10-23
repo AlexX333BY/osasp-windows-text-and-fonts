@@ -51,6 +51,9 @@
     <ClCompile Include="DeviceContextProcessor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SemicircleStampDrawer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StampIndent.h">
@@ -84,6 +87,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="DeviceContextProcessor.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SemicircleStampDrawer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
